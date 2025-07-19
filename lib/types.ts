@@ -1,14 +1,21 @@
-export interface Person {
+export type Person = {
   id: string
   name: string
+  registry_number: string
 }
 
-export interface TimeRecord {
+export type TimerData = {
   id: string
   personId: string
   orderNumber: string
   startTime: string
-  endTime: string | null
-  duration: number // in seconds
 }
 
+export type TimeRecord = {
+  id: string
+  personId: string
+  orderNumber: string
+  startTime: string
+  endTime?: string
+  duration?: number
+}

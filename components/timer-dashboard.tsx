@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Timer } from "@/components/timer"
-import type { Person, TimeRecord } from "@/lib/types"
+import type { Person, TimerData, TimeRecord } from "@/lib/types"
 import { Maximize2 } from "lucide-react"
 
 interface TimerDashboardProps {
   people: Person[]
-  activeTimers: TimeRecord[]
+  activeTimers: TimerData[]
   onStartTimer: (personId: string, orderNumber: string) => void
   onStopTimer: (timerId: string) => void
   logoUrl?: string // URL opcional para o logo
