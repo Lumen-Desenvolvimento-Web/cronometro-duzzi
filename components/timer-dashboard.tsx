@@ -1,3 +1,99 @@
+// 'use client'
+
+// import { useState } from 'react'
+// import { Timer } from './timer'
+// import { Person, TimerData, TimeRecord } from '@/lib/types'
+
+// interface TimerDashboardProps {
+//   people: Person[]
+//   activeTimers: TimerData[]
+//   onStartTimer: (personId: string, orderNumber: string) => Promise<TimerData | void>
+//   onStopTimer: (timerId: string) => Promise<TimeRecord | void>
+// }
+
+// export function TimerDashboard({
+//   people,
+//   activeTimers,
+//   onStartTimer,
+//   onStopTimer,
+// }: TimerDashboardProps) {
+//   // controla o input de orderNumber para cada pessoa
+//   const [orderNumbers, setOrderNumbers] = useState<Record<string, string>>({})
+
+//   return (
+//     <div className="space-y-6">
+//       {people.map((person) => {
+//         const timer = activeTimers.find((t) => t.personId === person.id)
+
+//         return (
+//           <div key={person.id} className="border rounded p-4">
+//             <div className="flex items-center justify-between">
+//               <span className="font-semibold">{person.name}</span>
+//               {!timer && (
+//                 <div className="flex gap-2">
+//                   <input
+//                     type="text"
+//                     placeholder="Número da nota"
+//                     value={orderNumbers[person.id] || ''}
+//                     onChange={(e) =>
+//                       setOrderNumbers((prev) => ({ ...prev, [person.id]: e.target.value }))
+//                     }
+//                     className="border p-1 rounded"
+//                   />
+//                   <button
+//                     onClick={() => {
+//                       const on = orderNumbers[person.id]?.trim()
+//                       if (on) onStartTimer(person.id, on)
+//                     }}
+//                     className="bg-green-600 text-white px-3 py-1 rounded"
+//                   >
+//                     Iniciar
+//                   </button>
+//                 </div>
+//               )}
+//             </div>
+
+//             {timer && (
+//               <div className="mt-4">
+//                 <Timer
+//                   timer={timer}
+//                   personName={person.name}
+//                   onStop={() => onStopTimer(timer.id)}
+//                 />
+//               </div>
+//             )}
+//           </div>
+//         )
+//       })}
+//     </div>
+//   )
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 "use client"
 
 import type React from "react"
@@ -14,9 +110,8 @@ import { Maximize2 } from "lucide-react"
 interface TimerDashboardProps {
   people: Person[]
   activeTimers: TimerData[]
-  onStartTimer: (personId: string, orderNumber: string) => void
-  onStopTimer: (timerId: string) => void
-  logoUrl?: string // URL opcional para o logo
+  onStartTimer: (personId: string, orderNumber: string) => Promise<TimerData | void>
+  onStopTimer: (timerId: string) => Promise<TimeRecord | void>
 }
 
 export function TimerDashboard({ people, activeTimers, onStartTimer, onStopTimer }: TimerDashboardProps) {

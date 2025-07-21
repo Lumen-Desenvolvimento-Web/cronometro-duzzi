@@ -6,14 +6,12 @@ import { PeopleManager } from '@/components/people-manager'
 import { TimerDashboard } from '@/components/timer-dashboard'
 import { Reports } from '@/components/reports'
 import type { Person, TimerData, TimeRecord } from '@/lib/types'
-import { fetchPeople, addPerson, fetchActiveTimers, fetchFinishedTimers, startTimer, stopTimer, removePerson, } from "@/lib/data-service"
+import { fetchPeople, addPerson, fetchActiveTimers, fetchFinishedTimers, startTimer, stopTimer, removePerson } from "@/lib/data-service"
 
 export function MainApp() {
   const [people, setPeople] = useState<Person[]>([])
-  // const [newPersonName, setNewPersonName] = useState('')
   const [activeTimers, setActiveTimers] = useState<TimerData[]>([])
   const [timeRecords, setTimeRecords] = useState<TimeRecord[]>([])
-  // const [orderNumbers, setOrderNumbers] = useState<{ [key: string]: string }>({})
   const [isTimerWindow, setIsTimerWindow] = useState(false)
 
   // Verificar se estamos na janela de timers
@@ -44,8 +42,8 @@ export function MainApp() {
   }
 
   const handleRemovePerson = async (id: string) => {
+    await removePerson(id)
     setPeople((prev) => prev.filter((person) => person.id !== id))
-    removePerson(id)
   }
 
   const handleStart = async (personId: string, orderNumber: string) => {
@@ -101,7 +99,7 @@ export function MainApp() {
         </TabsContent>
 
         <TabsContent value="people">
-          <PeopleManager people={people} onAddPerson={addPerson} onRemovePerson={removePerson} />
+          <PeopleManager people={people} onAddPerson={handleAddPerson} onRemovePerson={handleRemovePerson} />
         </TabsContent>
 
         <TabsContent value="reports">

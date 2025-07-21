@@ -12,8 +12,8 @@ import type { Person } from "@/lib/types"
 
 interface PeopleManagerProps {
   people: Person[]
-  onAddPerson: (name: string) => void
-  onRemovePerson: (id: string) => void
+  onAddPerson: (name: string) => Promise<void>
+  onRemovePerson: (id: string) => Promise<void>
 }
 
 export function PeopleManager({ people, onAddPerson, onRemovePerson }: PeopleManagerProps) {
@@ -52,6 +52,7 @@ export function PeopleManager({ people, onAddPerson, onRemovePerson }: PeopleMan
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
+              <TableHead>Registro</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -66,6 +67,7 @@ export function PeopleManager({ people, onAddPerson, onRemovePerson }: PeopleMan
               people.map((person) => (
                 <TableRow key={person.id}>
                   <TableCell>{person.name}</TableCell>
+                  <TableCell>{person.registry_number}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="icon" onClick={() => onRemovePerson(person.id)}>
                       <Trash2 className="h-4 w-4" />
