@@ -1,108 +1,10 @@
-// 'use client'
-
-// import { useState } from 'react'
-// import { Timer } from './timer'
-// import { Person, TimerData, TimeRecord } from '@/lib/types'
-
-// interface TimerDashboardProps {
-//   people: Person[]
-//   activeTimers: TimerData[]
-//   onStartTimer: (personId: string, orderNumber: string) => Promise<TimerData | void>
-//   onStopTimer: (timerId: string) => Promise<TimeRecord | void>
-// }
-
-// export function TimerDashboard({
-//   people,
-//   activeTimers,
-//   onStartTimer,
-//   onStopTimer,
-// }: TimerDashboardProps) {
-//   // controla o input de orderNumber para cada pessoa
-//   const [orderNumbers, setOrderNumbers] = useState<Record<string, string>>({})
-
-//   return (
-//     <div className="space-y-6">
-//       {people.map((person) => {
-//         const timer = activeTimers.find((t) => t.personId === person.id)
-
-//         return (
-//           <div key={person.id} className="border rounded p-4">
-//             <div className="flex items-center justify-between">
-//               <span className="font-semibold">{person.name}</span>
-//               {!timer && (
-//                 <div className="flex gap-2">
-//                   <input
-//                     type="text"
-//                     placeholder="Número da nota"
-//                     value={orderNumbers[person.id] || ''}
-//                     onChange={(e) =>
-//                       setOrderNumbers((prev) => ({ ...prev, [person.id]: e.target.value }))
-//                     }
-//                     className="border p-1 rounded"
-//                   />
-//                   <button
-//                     onClick={() => {
-//                       const on = orderNumbers[person.id]?.trim()
-//                       if (on) onStartTimer(person.id, on)
-//                     }}
-//                     className="bg-green-600 text-white px-3 py-1 rounded"
-//                   >
-//                     Iniciar
-//                   </button>
-//                 </div>
-//               )}
-//             </div>
-
-//             {timer && (
-//               <div className="mt-4">
-//                 <Timer
-//                   timer={timer}
-//                   personName={person.name}
-//                   onStop={() => onStopTimer(timer.id)}
-//                 />
-//               </div>
-//             )}
-//           </div>
-//         )
-//       })}
-//     </div>
-//   )
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 "use client"
 
 import type React from "react"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Timer } from "@/components/timer"
 import type { Person, TimerData, TimeRecord } from "@/lib/types"
 import { Maximize2 } from "lucide-react"
@@ -110,11 +12,12 @@ import { Maximize2 } from "lucide-react"
 interface TimerDashboardProps {
   people: Person[]
   activeTimers: TimerData[]
+  availableTimers: TimerData[]
   onStartTimer: (personId: string, orderNumber: string) => Promise<TimerData | void>
   onStopTimer: (timerId: string) => Promise<TimeRecord | void>
 }
 
-export function TimerDashboard({ people, activeTimers, onStartTimer, onStopTimer }: TimerDashboardProps) {
+export function TimerDashboard({ people, activeTimers, availableTimers, onStartTimer, onStopTimer }: TimerDashboardProps) {
   const [selectedPersonId, setSelectedPersonId] = useState("")
   const [orderNumber, setOrderNumber] = useState("")
   const [isDetached, setIsDetached] = useState(false)
@@ -245,7 +148,7 @@ export function TimerDashboard({ people, activeTimers, onStartTimer, onStopTimer
 
   return (
     <div className="space-y-6">
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>Iniciar Novo Cronômetro</CardTitle>
         </CardHeader>
@@ -276,7 +179,7 @@ export function TimerDashboard({ people, activeTimers, onStartTimer, onStopTimer
               Iniciar Cronômetro
             </Button>
           </div>
-          {/* Add this after the Select component in the "Iniciar Novo Cronômetro" card */}
+
           <div className="col-span-full mt-2">
             <p className="text-sm text-muted-foreground mb-1">Membros disponíveis (sem cronômetros ativos):</p>
             <div className="flex flex-wrap gap-2">
@@ -297,51 +200,112 @@ export function TimerDashboard({ people, activeTimers, onStartTimer, onStopTimer
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Cronômetros Ativos</CardTitle>
-          {isElectron && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDetachTimers}
-              disabled={isDetached} // Removida a condição activeTimers.length === 0
-              title="Destacar cronômetros em uma nova janela"
-            >
-              <Maximize2 className="h-4 w-4 mr-2" />
-              Destacar Timers
-            </Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Cronômetros Disponíveis</CardTitle>
+            {isElectron && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDetachTimers}
+                disabled={isDetached} // Removida a condição activeTimers.length === 0
+                title="Destacar cronômetros em uma nova janela"
+              >
+                <Maximize2 className="h-4 w-4 mr-2" />
+                Destacar Timers
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {availableTimers.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                Nenhum cronômetro disponível.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {availableTimers.map((timer) => {
+                  const person = people.find((p) => p.id === timer.personId)
+                  return (
+                    // <Timer
+                    //   key={timer.id}
+                    //   timer={timer}
+                    //   personName={person?.name || "Desconhecido"}
+                    //   onStop={() => onStopTimer(timer.id)}
+                    // />
+                    <Card key={timer.id} className="flex flex-col gap-2">
+                      <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle className="text-sm font-semibold">Nota: {timer.orderNumber}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">Itens: {timer.itemCount}</p>
+                        <p className="text-sm text-muted-foreground">Volumes: {timer.volumeCount}</p>
+                        <Button
+                          size="sm"
+                          className="mt-4"
+                          onClick={() => onStartTimer("81687958-4dd0-4a3a-b1b8-d76a2db5c229", timer.orderNumber)}>
+                            Iniciar Timer
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+          {isDetached && (
+            <CardFooter>
+              <p className="text-sm text-muted-foreground">Os cronômetros estão sendo exibidos em uma janela separada.</p>
+            </CardFooter>
           )}
-        </CardHeader>
-        <CardContent>
-          {activeTimers.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Nenhum cronômetro ativo. Inicie um novo cronômetro acima.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {activeTimers.map((timer) => {
-                const person = people.find((p) => p.id === timer.personId)
-                return (
-                  <Timer
-                    key={timer.id}
-                    timer={timer}
-                    personName={person?.name || "Desconhecido"}
-                    onStop={() => onStopTimer(timer.id)}
-                  />
-                )
-              })}
-            </div>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Cronômetros Ativos</CardTitle>
+            {isElectron && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDetachTimers}
+                disabled={isDetached} // Removida a condição activeTimers.length === 0
+                title="Destacar cronômetros em uma nova janela"
+              >
+                <Maximize2 className="h-4 w-4 mr-2" />
+                Destacar Timers
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {activeTimers.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                Nenhum cronômetro ativo.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activeTimers.map((timer) => {
+                  const person = people.find((p) => p.id === timer.personId)
+                  return (
+                    <Timer
+                      key={timer.id}
+                      timer={timer}
+                      personName={person?.name || "Desconhecido"}
+                      onStop={() => onStopTimer(timer.id)}
+                    />
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+          {isDetached && (
+            <CardFooter>
+              <p className="text-sm text-muted-foreground">Os cronômetros estão sendo exibidos em uma janela separada.</p>
+            </CardFooter>
           )}
-        </CardContent>
-        {isDetached && (
-          <CardFooter>
-            <p className="text-sm text-muted-foreground">Os cronômetros estão sendo exibidos em uma janela separada.</p>
-          </CardFooter>
-        )}
-      </Card>
+        </Card>
+      </div>
     </div>
   )
 }

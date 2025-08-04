@@ -20,7 +20,8 @@ export function Timer({ timer, personName, onStop }: TimerProps) {
   })
 
   useEffect(() => {
-    const startTime = new Date(timer.startTime).getTime()
+    // const startTime = new Date(timer.startTime).getTime()
+    const startTime = timer.startTime ? new Date(timer.startTime).getTime() : 0;
 
     // Atualiza o tempo decorrido imediatamente
     const updateElapsedTime = () => {

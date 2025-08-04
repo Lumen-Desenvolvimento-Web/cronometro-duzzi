@@ -6,11 +6,13 @@ import { PeopleManager } from '@/components/people-manager'
 import { TimerDashboard } from '@/components/timer-dashboard'
 import { Reports } from '@/components/reports'
 import type { Person, TimerData, TimeRecord } from '@/lib/types'
-import { fetchPeople, addPerson, fetchActiveTimers, fetchFinishedTimers, startTimer, stopTimer, removePerson } from "@/lib/data-service"
+import { fetchPeople, addPerson, fetchActiveTimers, fetchAvailableTimers, fetchFinishedTimers, startTimer, stopTimer, removePerson } from "@/lib/data-service"
+import { finished } from 'stream'
 
 export function MainApp() {
   const [people, setPeople] = useState<Person[]>([])
   const [activeTimers, setActiveTimers] = useState<TimerData[]>([])
+  const [availableTimers, setAvailableTimers] = useState<TimerData[]>([])
   const [timeRecords, setTimeRecords] = useState<TimeRecord[]>([])
   const [isTimerWindow, setIsTimerWindow] = useState(false)
 
@@ -24,17 +26,19 @@ export function MainApp() {
   // Carrega tudo ao montar
   useEffect(() => {
     async function loadAll() {
-      const [people, activeTimers, finishedTimers] = await Promise.all([
+      const [people, activeTimers, availableTimers, finishedTimers] = await Promise.all([
         fetchPeople(),
         fetchActiveTimers(),
+        fetchAvailableTimers(),
         fetchFinishedTimers(),
       ])
       setPeople(people)
       setActiveTimers(activeTimers)
+      setAvailableTimers(availableTimers)
       setTimeRecords(finishedTimers)
     }
     loadAll()
-  }, [])
+  }, [people, activeTimers, availableTimers, timeRecords])
 
   const handleAddPerson = async (name: string) => {
     const newPerson = await addPerson(name)
@@ -67,7 +71,7 @@ export function MainApp() {
           </div>
         </div>
 
-        <TimerDashboard people={people} activeTimers={activeTimers} onStartTimer={startTimer} onStopTimer={stopTimer} />
+        <TimerDashboard people={people} activeTimers={activeTimers} availableTimers={availableTimers} onStartTimer={startTimer} onStopTimer={stopTimer} />
       </div>
     )
   }
@@ -93,6 +97,7 @@ export function MainApp() {
           <TimerDashboard
             people={people}
             activeTimers={activeTimers}
+            availableTimers={availableTimers}
             onStartTimer={handleStart}
             onStopTimer={handleStop}
           />

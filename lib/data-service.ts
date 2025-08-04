@@ -48,6 +48,7 @@ export async function fetchActiveTimers(): Promise<TimerData[]> {
     .from('notes')
     .select('id, number, separator_id, separation_started_at')
     .is('separation_finished_at', null)
+    .not('separation_started_at', 'is', null)
 
   if (error) throw error
 
@@ -56,6 +57,23 @@ export async function fetchActiveTimers(): Promise<TimerData[]> {
     orderNumber: row.number,
     personId: row.separator_id,
     startTime: row.separation_started_at,
+  }))
+}
+
+export async function fetchAvailableTimers(): Promise<TimerData[]> {
+  const { data, error } = await supabase
+    .from('notes')
+    .select('id, number, item_count, volume_count')
+    .is('separation_finished_at', null)
+    .is('separation_started_at', null)
+
+  if (error) throw error
+
+  return data.map((row) => ({
+    id: row.id,
+    orderNumber: row.number,
+    itemCount: row.item_count,
+    volumeCount: row.volume_count,
   }))
 }
 
@@ -86,15 +104,8 @@ export async function startTimer(personId: string, orderNumber: string): Promise
   const now = new Date().toISOString()
   const { data, error } = await supabase
     .from('notes')
-    .insert([{
-      number: orderNumber,
-      item_count: 0,
-      volume_count: 0,
-      order_date: now,
-      separation_started_at: now,
-      separator_id: personId,
-      status: 'separando',
-    }])
+    .update({ separation_started_at: now, status: 'separando', separator_id: personId })
+    .eq('number', orderNumber)
     .select('id, number, separator_id, separation_started_at')
     .single()
 
