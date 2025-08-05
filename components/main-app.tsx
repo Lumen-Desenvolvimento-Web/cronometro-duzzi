@@ -6,7 +6,7 @@ import { PeopleManager } from '@/components/people-manager'
 import { TimerDashboard } from '@/components/timer-dashboard'
 import { Reports } from '@/components/reports'
 import type { Person, TimerData, TimeRecord } from '@/lib/types'
-import { fetchPeople, addPerson, fetchActiveTimers, fetchAvailableTimers, fetchFinishedTimers, startTimer, stopTimer, removePerson } from "@/lib/data-service"
+import { fetchPeople, registerUser, fetchActiveTimers, fetchAvailableTimers, fetchFinishedTimers, startTimer, stopTimer, removePerson } from "@/lib/data-service"
 import { finished } from 'stream'
 
 export function MainApp() {
@@ -40,8 +40,13 @@ export function MainApp() {
     loadAll()
   }, [people, activeTimers, availableTimers, timeRecords])
 
-  const handleAddPerson = async (name: string) => {
-    const newPerson = await addPerson(name)
+  // const handleAddPerson = async (name: string) => {
+  //   const newPerson = await addPerson(name)
+  //   setPeople((prev) => [...prev, newPerson])
+  // }
+
+  const handleRegisterUser = async (name: string, username: string, password: string) => {
+    const newPerson = await registerUser(name, username, password)
     setPeople((prev) => [...prev, newPerson])
   }
 
@@ -104,7 +109,7 @@ export function MainApp() {
         </TabsContent>
 
         <TabsContent value="people">
-          <PeopleManager people={people} onAddPerson={handleAddPerson} onRemovePerson={handleRemovePerson} />
+          <PeopleManager people={people} onRegisterUser={handleRegisterUser} onRemovePerson={handleRemovePerson} />
         </TabsContent>
 
         <TabsContent value="reports">

@@ -1,7 +1,7 @@
 export type Person = {
   id: string
   name: string
-  registry_number: string
+  username: string
 }
 
 export type TimerData = {

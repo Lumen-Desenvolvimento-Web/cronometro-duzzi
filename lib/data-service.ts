@@ -1,45 +1,68 @@
 import { supabase } from './supabase'
 import { Person, TimeRecord, TimerData } from './types'
+import { decryptPassword, encryptPassword } from './crypto'
 
-// ======== People (Separators) ========
+// ======== People (users) ========
 export async function fetchPeople(): Promise<Person[]> {
   const { data, error } = await supabase
-    .from('separators')
-    .select('user_id, name, registry_number')
+    .from('users')
+    .select('id, name, username')
     .order('name', { ascending: true })
 
   if (error) throw error
 
   return data.map((row) => ({
-    id: row.user_id,
+    id: row.id,
     name: row.name,
-    registry_number: row.registry_number,
+    username: row.username,
   }))
 }
 
-export async function addPerson(name: string): Promise<Person> {
+export async function registerUser(name: string, username: string, password: string): Promise<Person> {
+  const password_hash = encryptPassword(password)
+
   const { data, error } = await supabase
-    .from('separators')
-    .insert([{ name, registry_number: 'TEMP' }])
-    .select('user_id, name, registry_number')
+    .from('users')
+    .insert({
+      name,
+      username,
+      password_hash,
+    })
+    .select('id, name, username')
     .single()
 
   if (error) throw error
 
   return {
-    id: data.user_id,
+    id: data.id,
     name: data.name,
-    registry_number: data.registry_number,
+    username: data.username,
   }
 }
 
 export async function removePerson(id: string): Promise<void> {
   const { error } = await supabase
-    .from('separators')
+    .from('users')
     .delete()
-    .eq('user_id', id)
+    .eq('id', id)
 
   if (error) throw error
+}
+
+
+export async function verifyCredentials(username: string, password: string) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('username', username)
+    .single()
+
+  if (error || !data) return { success: false, message: 'Usuário não encontrado' }
+
+  const decrypted = decryptPassword(data.password_hash)
+  if (decrypted !== password) return { success: false, message: 'Senha incorreta' }
+
+  return { success: true, user: data }
 }
 
 // ======== Timers ========

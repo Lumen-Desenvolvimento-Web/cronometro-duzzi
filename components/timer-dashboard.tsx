@@ -8,6 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Timer } from "@/components/timer"
 import type { Person, TimerData, TimeRecord } from "@/lib/types"
 import { Maximize2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
+import { Input } from "./ui/input"
+import { verifyCredentials } from "@/lib/data-service"
 
 interface TimerDashboardProps {
   people: Person[]
@@ -18,12 +21,16 @@ interface TimerDashboardProps {
 }
 
 export function TimerDashboard({ people, activeTimers, availableTimers, onStartTimer, onStopTimer }: TimerDashboardProps) {
-  const [selectedPersonId, setSelectedPersonId] = useState("")
   const [orderNumber, setOrderNumber] = useState("")
   const [isDetached, setIsDetached] = useState(false)
   const [isElectron, setIsElectron] = useState(false)
   const [isTimerWindow, setIsTimerWindow] = useState(false)
   const [localTimers, setLocalTimers] = useState<TimeRecord[]>([])
+
+  const [loginModalOpen, setLoginModalOpen] = useState(false)
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [loginError, setLoginError] = useState("")
 
   // Verificar se estamos no Electron e se é uma janela de timer
   // Isso é executado apenas no cliente, evitando erros de hidratação
@@ -78,29 +85,35 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
     return activeTimers.some((timer) => timer.personId === personId)
   }
 
-  const handleStartTimer = () => {
-    if (selectedPersonId && orderNumber.trim()) {
-      // Check if the person already has an active timer
-      if (personHasActiveTimer(selectedPersonId)) {
+  const handleStartTimer = async () => {
+    const authenticated = await verifyCredentials(username, password)
+    if (!authenticated.success) {
+      setLoginError(authenticated.message || "Usuário ou senha incorretos")
+      return
+    }
+
+    const personId = people.find((person) => person.username === username)?.id
+    if (personId) {
+      if (personHasActiveTimer(personId)) {
         // You can add a toast notification here if you have a toast system
-        console.warn("Esta pessoa já possui um cronômetro ativo")
+        setLoginError("Usuário ja possui um cronômetro ativo")
         return
       }
 
-      onStartTimer(selectedPersonId, orderNumber.trim())
+      onStartTimer(personId, orderNumber.trim())
       setOrderNumber("")
+      setLoginModalOpen(false)
+      setUsername("")
+      setPassword("")
+      setLoginError("")
+    } else {
+      setLoginError("Usuário nao encontrado")
     }
   }
 
   // Add this function inside the TimerDashboard component
   const getPeopleWithoutActiveTimers = () => {
     return people.filter((person) => !personHasActiveTimer(person.id))
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleStartTimer()
-    }
   }
 
   const handleDetachTimers = () => {
@@ -147,61 +160,8 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
   }
 
   return (
+    <>
     <div className="space-y-6">
-      {/* <Card>
-        <CardHeader>
-          <CardTitle>Iniciar Novo Cronômetro</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Select value={selectedPersonId} onValueChange={setSelectedPersonId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o membro da equipe" />
-              </SelectTrigger>
-              <SelectContent>
-                {people.map((person) => (
-                  <SelectItem key={person.id} value={person.id} disabled={personHasActiveTimer(person.id)}>
-                    {person.name} {personHasActiveTimer(person.id) ? "(Timer ativo)" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Input
-              placeholder="Número da nota"
-              value={orderNumber}
-              type="number"
-              onChange={(e) => setOrderNumber(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-
-            <Button onClick={handleStartTimer} disabled={!selectedPersonId || !orderNumber.trim()}>
-              Iniciar Cronômetro
-            </Button>
-          </div>
-
-          <div className="col-span-full mt-2">
-            <p className="text-sm text-muted-foreground mb-1">Membros disponíveis (sem cronômetros ativos):</p>
-            <div className="flex flex-wrap gap-2">
-              {getPeopleWithoutActiveTimers().map((person) => (
-                <Button
-                  key={person.id}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedPersonId(person.id)}
-                  className="text-xs"
-                >
-                  {person.name}
-                </Button>
-              ))}
-              {getPeopleWithoutActiveTimers().length === 0 && (
-                <p className="text-xs text-muted-foreground">Todos os membros possuem cronômetros ativos.</p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card> */}
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -229,12 +189,6 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                 {availableTimers.map((timer) => {
                   const person = people.find((p) => p.id === timer.personId)
                   return (
-                    // <Timer
-                    //   key={timer.id}
-                    //   timer={timer}
-                    //   personName={person?.name || "Desconhecido"}
-                    //   onStop={() => onStopTimer(timer.id)}
-                    // />
                     <Card key={timer.id} className="flex flex-col gap-2">
                       <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-semibold">Nota: {timer.orderNumber}</CardTitle>
@@ -245,7 +199,10 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                         <Button
                           size="sm"
                           className="mt-4"
-                          onClick={() => onStartTimer("81687958-4dd0-4a3a-b1b8-d76a2db5c229", timer.orderNumber)}>
+                          onClick={() => {
+                            setLoginModalOpen(true)
+                            setOrderNumber(timer.orderNumber)
+                          }}>
                             Iniciar Timer
                         </Button>
                       </CardContent>
@@ -307,5 +264,40 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
         </Card>
       </div>
     </div>
+
+    <Dialog open={loginModalOpen} onOpenChange={(open) => {
+      setLoginModalOpen(open)
+      if (!open) {
+        setUsername("")
+        setPassword("")
+        setLoginError("")
+      }
+    }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Login para Iniciar</DialogTitle>
+        </DialogHeader>
+
+        {/* Campos de username e senha */}
+        <Input
+          placeholder="Nome de usuário"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <Input
+          type="password"
+          placeholder="Senha"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <Button onClick={handleStartTimer}>
+          Iniciar Cronômetro
+        </Button>
+
+        {loginError && <p className="text-red-500 mt-2 text-sm">{loginError}</p>}
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }

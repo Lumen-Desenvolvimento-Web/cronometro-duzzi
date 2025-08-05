@@ -73,7 +73,7 @@ export function Timer({ timer, personName, onStop }: TimerProps) {
   }, [timer.startTime])
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden min-w-80 w-fit">
       <CardContent className="p-4">
         <div className="space-y-2">
           <div className="flex flex-col justify-between items-center">
@@ -82,7 +82,7 @@ export function Timer({ timer, personName, onStop }: TimerProps) {
           </div>
           <div className="text-6xl font-bold text-center py-4">{formatTime(elapsedTime)}</div>
           <div className="text-xs text-muted-foreground">
-            Iniciado: {new Date(timer.startTime).toLocaleString("pt-BR")}
+            Iniciado: {timer.startTime && new Date(timer.startTime).toLocaleString("pt-BR")}
           </div>
         </div>
       </CardContent>
