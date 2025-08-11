@@ -40,11 +40,6 @@ export function MainApp() {
     loadAll()
   }, [people, activeTimers, availableTimers, timeRecords])
 
-  // const handleAddPerson = async (name: string) => {
-  //   const newPerson = await addPerson(name)
-  //   setPeople((prev) => [...prev, newPerson])
-  // }
-
   const handleRegisterUser = async (name: string, username: string, password: string) => {
     const newPerson = await registerUser(name, username, password)
     setPeople((prev) => [...prev, newPerson])

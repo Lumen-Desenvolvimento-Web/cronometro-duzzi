@@ -89,6 +89,7 @@ export async function fetchAvailableTimers(): Promise<TimerData[]> {
     .select('id, number, item_count, volume_count')
     .is('separation_finished_at', null)
     .is('separation_started_at', null)
+    .order('order_date', { ascending: true })
 
   if (error) throw error
 
