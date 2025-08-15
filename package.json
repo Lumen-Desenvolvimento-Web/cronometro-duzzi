@@ -7,7 +7,7 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:next\" \"npm run dev:electron\"",
-    "dev:next": "next dev -p 3001",
+    "dev:next": "next dev -H 0.0.0.0 -p 3001",
     "dev:electron": "cross-env NODE_ENV=development electron .",
     "build": "next build && node scripts/copy-output.js && node scripts/fix-html-paths.js && electron-builder",
     "start": "electron .",
