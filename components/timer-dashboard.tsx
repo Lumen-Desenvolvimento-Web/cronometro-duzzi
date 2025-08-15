@@ -123,6 +123,8 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
     }
   }
 
+  // console.log(availableTimers)
+
   // Se estamos na janela de timers, mostrar apenas os timers e o logo
   if (isTimerWindow) {
     // Usar localTimers em vez de activeTimers na janela destacada
@@ -161,23 +163,12 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
 
   return (
     <>
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+    <div className="flex gap-4">
+      <div className="space-y-6 mb-3 w-fit">
+        <Card className="min-h-96">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Cronômetros Disponíveis</CardTitle>
-            {isElectron && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDetachTimers}
-                disabled={isDetached} // Removida a condição activeTimers.length === 0
-                title="Destacar cronômetros em uma nova janela"
-              >
-                <Maximize2 className="h-4 w-4 mr-2" />
-                Destacar Timers
-              </Button>
-            )}
+            <CardTitle>Notas na Fila: {availableTimers.length}</CardTitle>
+            
           </CardHeader>
           <CardContent>
             {availableTimers.length === 0 ? (
@@ -185,30 +176,35 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                 Nenhum cronômetro disponível.
               </p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {availableTimers.map((timer) => {
-                  const person = people.find((p) => p.id === timer.personId)
-                  return (
-                    <Card key={timer.id} className="flex flex-col gap-2">
-                      <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-sm font-semibold">Nota: {timer.orderNumber}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">Itens: {timer.itemCount}</p>
-                        <p className="text-sm text-muted-foreground">Volumes: {timer.volumeCount}</p>
-                        <Button
-                          size="sm"
-                          className="mt-4"
-                          onClick={() => {
-                            setLoginModalOpen(true)
-                            setOrderNumber(timer.orderNumber)
-                          }}>
-                            Iniciar Timer
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
+              <div className="w-fit">
+                <p className="text-sm mb-2">Próxima nota:</p>
+                <Card key={availableTimers[0].id} className="flex flex-col gap-2">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-sm font-semibold">Nota: {availableTimers[0].orderNumber}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">Itens: {availableTimers[0].itemCount}</p>
+                    <p className="text-sm text-muted-foreground">Volumes: {availableTimers[0].volumeCount}</p>
+                    <Button
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => {
+                        setLoginModalOpen(true)
+                        setOrderNumber(availableTimers[0].orderNumber)
+                      }}>
+                        Iniciar Timer
+                    </Button>
+                  </CardContent>
+                </Card>
+                {/* <Button
+                  size="sm"
+                  className="mt-4"
+                  onClick={() => {
+                    setLoginModalOpen(true)
+                    setOrderNumber(availableTimers[0].orderNumber)
+                  }}>
+                    Iniciar Timer
+                </Button> */}
               </div>
             )}
           </CardContent>
@@ -218,8 +214,10 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
             </CardFooter>
           )}
         </Card>
+      </div>
 
-        <Card>
+      <div className="space-y-6 w-full">
+        <Card className="min-h-96">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Cronômetros Ativos</CardTitle>
             {isElectron && (
@@ -262,6 +260,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
             </CardFooter>
           )}
         </Card>
+        {/* </div> */}
       </div>
     </div>
 
