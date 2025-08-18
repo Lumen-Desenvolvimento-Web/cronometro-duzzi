@@ -23,3 +23,12 @@ export type TimeRecord = {
   itemCount?: number | 0
   volumeCount?: number | 0
 }
+
+export type Product = {
+  id: string
+  noteNumber: string
+  description: string
+  code: string
+  amount: number
+  location: string
+}
