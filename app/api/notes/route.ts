@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { Product } from '@/lib/types'
 
 export async function POST(req: Request) {
     try {
         const body = await req.json()
 
-        const {
+        let {
             number,
             item_count,
             volume_count,
@@ -14,7 +15,12 @@ export async function POST(req: Request) {
             separator_id = null,
             separation_started_at = null,
             separation_finished_at = null,
+            products
         } = body
+
+        if (!Array.isArray(products)) {
+            products = [products]
+        }
 
         const { data, error } = await supabase.from('notes').insert({
             number,
@@ -32,7 +38,22 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: error.message }, { status: 500 })
         }
 
-        return NextResponse.json({ data }, { status: 201 })
+        const { data: productsData, error: productsError } = await supabase.from('products').insert(
+            products.map((product: Product) => ({
+                note_number: number,
+                product_code: product.code,
+                product_description: product.description,
+                product_amount: product.amount,
+                product_location: product.location,
+            }))
+        ).select()
+
+        if (productsError) {
+            console.error('Erro ao inserir produtos:', productsError.message)
+            return NextResponse.json({ error: productsError.message }, { status: 500 })
+        }
+
+        return NextResponse.json({ data, products: productsData }, { status: 201 })
 
     } catch (err) {
         console.error('Erro geral:', err)
