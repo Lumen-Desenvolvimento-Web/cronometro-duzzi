@@ -69,7 +69,7 @@ export async function verifyCredentials(username: string, password: string) {
 export async function fetchActiveTimers(): Promise<TimerData[]> {
   const { data, error } = await supabase
     .from('notes')
-    .select('id, number, separator_id, separation_started_at')
+    .select('id, number, separator_id, separation_started_at, item_count, volume_count, products(*)')
     .is('separation_finished_at', null)
     .not('separation_started_at', 'is', null)
 
@@ -80,6 +80,16 @@ export async function fetchActiveTimers(): Promise<TimerData[]> {
     orderNumber: row.number,
     personId: row.separator_id,
     startTime: row.separation_started_at,
+    itemCount: row.item_count,
+    volumeCount: row.volume_count,
+    products: row.products.map((product) => ({
+      id: product.id,
+      noteNumber: product.note_number,
+      description: product.product_description,
+      code: product.product_code,
+      amount: product.product_amount,
+      location: product.product_location
+    })),
   }))
 }
 

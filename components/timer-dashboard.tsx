@@ -163,12 +163,35 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
 
   return (
     <>
+    <div className="w-full flex flex-row items-center justify-between mb-6">
+      <div className="flex flex-col gap-1 align-middle">
+        <div>
+          <p className="font-bold text-xl">Separadores disponíveis:</p>
+        </div>
+        <div className="flex gap-2">
+          {getPeopleWithoutActiveTimers().map((person) => (
+            <Card className="items-center px-5 py-2 w-fit">
+                <p>{person.name}</p>
+            </Card>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-col gap-1">
+        <div>
+          <p className="font-bold text-xl pr-20">Separadores em Intervalo:</p>
+        </div>
+        <div>
+          <Card className="items-center px-5 py-2 w-fit">
+              <p>teste</p>
+          </Card>
+        </div>
+      </div>
+    </div>
     <div className="flex gap-4">
       <div className="space-y-6 mb-3 w-fit">
         <Card className="min-h-96">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Notas na Fila: {availableTimers.length}</CardTitle>
-            
+            <CardTitle className="text-nowrap w-full">Pedidos na Fila: {availableTimers.length}</CardTitle>
           </CardHeader>
           <CardContent>
             {availableTimers.length === 0 ? (
@@ -183,8 +206,8 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                     <CardTitle className="text-sm font-semibold">Nota: {availableTimers[0].orderNumber}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground">Itens: {availableTimers[0].itemCount}</p>
-                    <p className="text-sm text-muted-foreground">Volumes: {availableTimers[0].volumeCount}</p>
+                    {/* <p className="text-sm text-muted-foreground">Itens: {availableTimers[0].itemCount}</p>
+                    <p className="text-sm text-muted-foreground">Volumes: {availableTimers[0].volumeCount}</p> */}
                     <Button
                       size="sm"
                       className="mt-4"
@@ -196,15 +219,6 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                     </Button>
                   </CardContent>
                 </Card>
-                {/* <Button
-                  size="sm"
-                  className="mt-4"
-                  onClick={() => {
-                    setLoginModalOpen(true)
-                    setOrderNumber(availableTimers[0].orderNumber)
-                  }}>
-                    Iniciar Timer
-                </Button> */}
               </div>
             )}
           </CardContent>
