@@ -6,7 +6,7 @@ import { decryptPassword, encryptPassword } from './crypto'
 export async function fetchPeople(): Promise<Person[]> {
   const { data, error } = await supabase
     .from('users')
-    .select('id, name, username')
+    .select('id, name, username, is_break')
     .order('name', { ascending: true })
 
   if (error) throw error
@@ -15,6 +15,7 @@ export async function fetchPeople(): Promise<Person[]> {
     id: row.id,
     name: row.name,
     username: row.username,
+    isBreak: row.is_break
   }))
 }
 
@@ -37,6 +38,7 @@ export async function registerUser(name: string, username: string, password: str
     id: data.id,
     name: data.name,
     username: data.username,
+    isBreak: false
   }
 }
 
@@ -49,6 +51,35 @@ export async function removePerson(id: string): Promise<void> {
   if (error) throw error
 }
 
+export async function takeBreak(personId: string): Promise<void> {
+  const { error } = await supabase
+    .from('users')
+    .update({ is_break: true })
+    .eq('id', personId)
+
+  if (error) throw error
+}
+
+export async function finishBreak(personId: string): Promise<void> {
+  const { error } = await supabase
+    .from('users')
+    .update({ is_break: false })
+    .eq('id', personId)
+
+  if (error) throw error
+}
+
+export async function isBreakActive(): Promise<{ is_break: boolean; id: string }> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('is_break, id')
+    .is('is_break', true)
+    .single()
+
+  if (error) throw error
+
+  return { is_break: data.is_break || false, id: data.id || '' }
+}
 
 export async function verifyCredentials(username: string, password: string) {
   const { data, error } = await supabase

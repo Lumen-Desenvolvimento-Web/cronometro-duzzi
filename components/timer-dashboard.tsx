@@ -95,7 +95,6 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
     const personId = people.find((person) => person.username === username)?.id
     if (personId) {
       if (personHasActiveTimer(personId)) {
-        // You can add a toast notification here if you have a toast system
         setLoginError("Usuário ja possui um cronômetro ativo")
         return
       }
@@ -113,7 +112,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
 
   // Add this function inside the TimerDashboard component
   const getPeopleWithoutActiveTimers = () => {
-    return people.filter((person) => !personHasActiveTimer(person.id))
+    return people.filter((person) => !personHasActiveTimer(person.id) && !person.isBreak)
   }
 
   const handleDetachTimers = () => {
@@ -178,12 +177,16 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
       </div>
       <div className="flex flex-col gap-1">
         <div>
-          <p className="font-bold text-xl pr-20">Separadores em Intervalo:</p>
+          <p className="font-bold text-xl pr-20">Separador em Intervalo:</p>
         </div>
         <div>
-          <Card className="items-center px-5 py-2 w-fit">
-              <p>teste</p>
-          </Card>
+          {people.find((person) => person.isBreak) && (
+            <Card className="items-center px-5 py-2 w-fit">
+                <p>
+                  {people.find((person) => person.isBreak)?.name || "Desconhecido"}
+                </p>
+            </Card>
+          )}
         </div>
       </div>
     </div>

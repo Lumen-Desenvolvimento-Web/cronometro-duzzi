@@ -2,6 +2,7 @@ export type Person = {
   id: string
   name: string
   username: string
+  isBreak: boolean
 }
 
 export type TimerData = {

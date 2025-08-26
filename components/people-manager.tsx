@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Trash2 } from "lucide-react"
 import type { Person } from "@/lib/types"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
+import { finishBreak, isBreakActive, takeBreak } from "@/lib/data-service"
 
 interface PeopleManagerProps {
   people: Person[]
@@ -20,9 +21,22 @@ interface PeopleManagerProps {
 export function PeopleManager({ people, onRegisterUser, onRemovePerson }: PeopleManagerProps) {
   const [newUserModalOpen, setNewUserModalOpen] = useState(false)
   const [newUser, setNewUser] = useState({ name: "", username: "", password: "" })
-
   const [removeUserModalOpen, setRemoveUserModalOpen] = useState(false)
   const [removeUserId, setRemoveUserId] = useState("")
+
+  const [breakActive, setBreakActive] = useState(false)
+  const [breakId, setBreakId] = useState("")
+
+  useEffect(() => {
+    async function checkBreak() {
+      const active = (await isBreakActive()).is_break
+      setBreakActive(active)
+      if (active) {
+        setBreakId((await isBreakActive()).id)
+      }
+    }
+    checkBreak()
+  }, [])
 
   const handleNewUser = async () => {
     await onRegisterUser(newUser.name, newUser.username, newUser.password)
@@ -34,6 +48,28 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
     setRemoveUserModalOpen(false)
   }
 
+  const handleBreak = async (id: string) => {
+    if (breakId === id) {
+      setBreakActive(false)
+      setBreakId("")
+      await finishBreak(id)
+      return
+    }
+    if (breakActive) {
+      return "Já existe alguém em intervalo"
+    }
+    setBreakActive(true)
+    setBreakId(id)
+    await takeBreak(id)
+  }
+
+  const resetBreak = () => {
+    setBreakActive(false)
+    setBreakId("")
+  }
+
+  // console.log(breakActive)
+
   return (
     <>
     <Card>
@@ -43,6 +79,7 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
       <CardContent>
         <div className="flex gap-2 mb-6">
           <Button onClick={() => setNewUserModalOpen(true)}>Adicionar Usuário</Button>
+          <Button onClick={resetBreak}>Limpar Intervalo</Button>
         </div>
 
         <Table>
@@ -50,7 +87,7 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>Nome de Usuário</TableHead>
-              <TableHead className="w-[100px]">Ações</TableHead>
+              <TableHead className="w-[100px] text-center" colSpan={2} align="center">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -65,7 +102,12 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
                 <TableRow key={person.id}>
                   <TableCell>{person.name}</TableCell>
                   <TableCell>{person.username}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-center">
+                    <Button className="w-[100px] text-wrap" disabled={breakActive ? (person.id === breakId ? false : true) : false} variant="outline" size="icon" onClick={() => handleBreak(person.id)}>
+                      {person.isBreak ? " Sair do Intervalo" : "Intervalo"}
+                    </Button>
+                  </TableCell>
+                  <TableCell className="text-center">
                     <Button variant="ghost" size="icon" onClick={() => {setRemoveUserId(person.id); setRemoveUserModalOpen(true)}}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
