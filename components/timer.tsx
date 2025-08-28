@@ -5,6 +5,9 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { TimeRecord } from "@/lib/types"
 import { formatTime } from "@/lib/utils"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog"
+import { Label } from "./ui/label"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 
 interface TimerProps {
   timer: TimeRecord
@@ -18,6 +21,7 @@ export function Timer({ timer, personName, onStop }: TimerProps) {
     backgroundColor: "rgb(22, 163, 74)", // Verde inicial
     color: "white",
   })
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
 
   useEffect(() => {
     // const startTime = new Date(timer.startTime).getTime()
@@ -72,13 +76,19 @@ export function Timer({ timer, personName, onStop }: TimerProps) {
     return () => clearInterval(interval)
   }, [timer.startTime])
 
+  useEffect(() => {
+    console.log("timer", timer)
+  }, [])
+
   return (
+    <>
     <Card className="overflow-hidden min-w-80 w-fit">
-      <CardContent className="p-4">
+      <CardContent className="p-4 cursor-pointer" onClick={() => setDetailsModalOpen(true)}>
         <div className="space-y-2">
           <div className="flex flex-col justify-between items-center">
             <span className="font-bold text-5xl">{personName}</span>
             <span className="text-xl text-muted-foreground">Nota #{timer.orderNumber}</span>
+            <span className="text-xl text-muted-foreground">Volumes: {timer.volumeCount} / Itens: {timer.itemCount}</span>
           </div>
           <div className="text-6xl font-bold text-center py-4">{formatTime(elapsedTime)}</div>
           <div className="text-xs text-muted-foreground">
@@ -92,5 +102,51 @@ export function Timer({ timer, personName, onStop }: TimerProps) {
         </Button>
       </CardFooter>
     </Card>
+
+    <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
+      <DialogContent className="w-fit">
+        <DialogHeader>
+          <DialogTitle>Detalhes da Nota</DialogTitle>
+        </DialogHeader>
+          <div className="space-y-1 text-xl">
+              <Label>Nota: <b>{timer.orderNumber}</b></Label>
+          </div>
+          <div className="space-y-1">
+            <div>
+              <Label>Volumes: {timer.volumeCount}</Label>
+            </div>
+            <div>
+              <Label>Itens: {timer.itemCount}</Label>
+            </div>
+            <div>
+              <Label>Produtos: </Label>
+              <Table className="mt-2 w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Código</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Quantidade</TableHead>
+                    <TableHead>Localização</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {timer?.products?.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.code}</TableCell>
+                      <TableCell>{item.description}</TableCell>
+                      <TableCell>{item.amount}</TableCell>
+                      <TableCell>{item.location}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        <DialogFooter>
+          <Button onClick={() => setDetailsModalOpen(false)}>Fechar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }
