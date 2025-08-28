@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Trash2 } from "lucide-react"
 import type { Person } from "@/lib/types"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
-import { finishBreak, isBreakActive, takeBreak } from "@/lib/data-service"
+import { finishBreak, isBreakActive, takeBreak, verifyCredentials } from "@/lib/data-service"
 
 interface PeopleManagerProps {
   people: Person[]
@@ -26,6 +26,12 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
 
   const [breakActive, setBreakActive] = useState(false)
   const [breakId, setBreakId] = useState("")
+  const [id, setId] = useState("")
+
+  const [loginModalOpen, setLoginModalOpen] = useState(false)
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [loginError, setLoginError] = useState("")
 
   useEffect(() => {
     async function checkBreak() {
@@ -49,26 +55,36 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
   }
 
   const handleBreak = async (id: string) => {
+    const authenticated = await verifyCredentials(username, password)
+    if (!authenticated.success) {
+      setLoginError(authenticated.message || "Usuário ou senha incorretos")
+      return
+    }
+
     if (breakId === id) {
       setBreakActive(false)
       setBreakId("")
       await finishBreak(id)
+
+      setLoginModalOpen(false)
+      setUsername("")
+      setPassword("")
+      setLoginError("")
       return
     }
     if (breakActive) {
-      return "Já existe alguém em intervalo"
+      setLoginError("Já existe alguém em intervalo")
+      return
     }
     setBreakActive(true)
     setBreakId(id)
     await takeBreak(id)
-  }
 
-  const resetBreak = () => {
-    setBreakActive(false)
-    setBreakId("")
+    setLoginModalOpen(false)
+    setUsername("")
+    setPassword("")
+    setLoginError("")
   }
-
-  // console.log(breakActive)
 
   return (
     <>
@@ -79,7 +95,6 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
       <CardContent>
         <div className="flex gap-2 mb-6">
           <Button onClick={() => setNewUserModalOpen(true)}>Adicionar Usuário</Button>
-          <Button onClick={resetBreak}>Limpar Intervalo</Button>
         </div>
 
         <Table>
@@ -103,7 +118,11 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
                   <TableCell>{person.name}</TableCell>
                   <TableCell>{person.username}</TableCell>
                   <TableCell className="text-center">
-                    <Button className="w-[100px] text-wrap" disabled={breakActive ? (person.id === breakId ? false : true) : false} variant="outline" size="icon" onClick={() => handleBreak(person.id)}>
+                    <Button className="w-[100px] text-wrap" disabled={breakActive ? (person.id === breakId ? false : true) : false} variant="outline" size="icon" 
+                    onClick={() => {
+                      setLoginModalOpen(true)
+                      setId(person.id)
+                    }}>
                       {person.isBreak ? " Sair do Intervalo" : "Intervalo"}
                     </Button>
                   </TableCell>
@@ -164,6 +183,41 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
         </Button>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={loginModalOpen} onOpenChange={(open) => {
+        setLoginModalOpen(open)
+
+        if (!open) {
+          setUsername("")
+          setPassword("")
+          setLoginError("")
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Login para Iniciar</DialogTitle>
+          </DialogHeader>
+  
+          {/* Campos de username e senha */}
+          <Input
+            placeholder="Nome de usuário"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <Input
+            type="password"
+            placeholder="Senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+  
+          <Button onClick={() => handleBreak(id)}>
+            Iniciar Intervalo
+          </Button>
+  
+          {loginError && <p className="text-red-500 mt-2 text-sm">{loginError}</p>}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
