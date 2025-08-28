@@ -85,6 +85,10 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
     return activeTimers.some((timer) => timer.personId === personId)
   }
 
+  const personOnBreak = (personId: string) => {
+    return people.find((person) => person.id === personId)?.isBreak
+  }
+
   const handleStartTimer = async () => {
     const authenticated = await verifyCredentials(username, password)
     if (!authenticated.success) {
@@ -96,6 +100,11 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
     if (personId) {
       if (personHasActiveTimer(personId)) {
         setLoginError("Usuário ja possui um cronômetro ativo")
+        return
+      }
+
+      if (personOnBreak(personId)) {
+        setLoginError("Usuário em intervalo")
         return
       }
 
