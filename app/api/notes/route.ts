@@ -4,6 +4,13 @@ import { Product } from '@/lib/types'
 
 export async function POST(req: Request) {
     try {
+        // 🔐 Verifica chave secreta no header
+        const apiKey = req.headers.get('x-api-key')
+        if (apiKey !== process.env.API_SECRET_KEY) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+        }
+
+
         const body = await req.json()
 
         let {
