@@ -22,6 +22,7 @@ export async function POST(req: Request) {
             separator_id = null,
             separation_started_at = null,
             separation_finished_at = null,
+            destination,
             products
         } = body
 
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
             separator_id,
             separation_started_at,
             separation_finished_at,
+            destination,
         }).select().single()
 
         if (error) {
