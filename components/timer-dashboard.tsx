@@ -18,9 +18,13 @@ interface TimerDashboardProps {
   availableTimers: TimerData[]
   onStartTimer: (personId: string, orderNumber: string) => Promise<TimerData | void>
   onStopTimer: (timerId: string) => Promise<TimeRecord | void>
+  activeConferenceTimers: TimerData[]
+  availableConferenceTimers: TimerData[]
+  onStartConferenceTimer: (personId: string, orderNumber: string) => Promise<TimerData | void>
+  onStopConferenceTimer: (timerId: string) => Promise<TimeRecord | void>
 }
 
-export function TimerDashboard({ people, activeTimers, availableTimers, onStartTimer, onStopTimer }: TimerDashboardProps) {
+export function TimerDashboard({ people, activeTimers, availableTimers, onStartTimer, onStopTimer, activeConferenceTimers, availableConferenceTimers, onStartConferenceTimer, onStopConferenceTimer }: TimerDashboardProps) {
   const [orderNumber, setOrderNumber] = useState("")
   const [isDetached, setIsDetached] = useState(false)
   const [isElectron, setIsElectron] = useState(false)
@@ -31,6 +35,8 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
+
+  const [typeTimer, setTypeTimer] = useState<"separation" | "conference" | null>()
 
   // Verificar se estamos no Electron e se é uma janela de timer
   // Isso é executado apenas no cliente, evitando erros de hidratação
@@ -85,6 +91,10 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
     return activeTimers.some((timer) => timer.personId === personId)
   }
 
+  const personHasActiveConferenceTimer = (personId: string) => {
+    return activeConferenceTimers.some((timer) => timer.personId === personId)
+  }
+
   const personOnBreak = (personId: string) => {
     return people.find((person) => person.id === personId)?.isBreak
   }
@@ -113,6 +123,38 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
       setLoginModalOpen(false)
       setUsername("")
       setPassword("")
+      setTypeTimer(null)
+      setLoginError("")
+    } else {
+      setLoginError("Usuário nao encontrado")
+    }
+  }
+
+  const handleStartConferenceTimer = async () => {
+    const authenticated = await verifyCredentials(username, password)
+    if (!authenticated.success) {
+      setLoginError(authenticated.message || "Usuário ou senha incorretos")
+      return
+    }
+
+    const personId = people.find((person) => person.username === username)?.id
+    if (personId) {
+      if (personHasActiveConferenceTimer(personId)) {
+        setLoginError("Usuário ja possui um cronômetro ativo")
+        return
+      }
+
+      if (personOnBreak(personId)) {
+        setLoginError("Usuário em intervalo")
+        return
+      }
+
+      onStartConferenceTimer(personId, orderNumber.trim())
+      setOrderNumber("")
+      setLoginModalOpen(false)
+      setUsername("")
+      setPassword("")
+      setTypeTimer(null)
       setLoginError("")
     } else {
       setLoginError("Usuário nao encontrado")
@@ -154,6 +196,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                   const person = people.find((p) => p.id === timer.personId)
                   return (
                     <Timer
+                      tag="Separação"
                       key={timer.id}
                       timer={timer}
                       personName={person?.name || "Desconhecido"}
@@ -202,37 +245,68 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
     <div className="flex gap-4">
       <div className="space-y-6 mb-3 w-fit">
         <Card className="min-h-96">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-nowrap w-full">Pedidos na Fila: {availableTimers.length}</CardTitle>
-          </CardHeader>
+          {/* <CardHeader className="flex flex-row items-center justify-between"> */}
+            {/* <CardTitle className="text-nowrap w-full">Fila de Separação: {availableTimers.length}</CardTitle> */}
+          {/* </CardHeader> */}
           <CardContent>
-            {availableTimers.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                Nenhum cronômetro disponível.
-              </p>
-            ) : (
-              <div className="w-fit">
-                <p className="text-sm mb-2">Próxima nota:</p>
-                <Card key={availableTimers[0].id} className="flex flex-col gap-2">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-sm font-semibold">Nota: {availableTimers[0].orderNumber}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {/* <p className="text-sm text-muted-foreground">Itens: {availableTimers[0].itemCount}</p>
-                    <p className="text-sm text-muted-foreground">Volumes: {availableTimers[0].volumeCount}</p> */}
-                    <Button
-                      size="sm"
-                      className="mt-4"
-                      onClick={() => {
-                        setLoginModalOpen(true)
-                        setOrderNumber(availableTimers[0].orderNumber)
-                      }}>
-                        Iniciar Timer
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+            <div>
+              <p className="font-bold text-xl text-nowrap py-3">Fila de Separação: {availableTimers.length}</p>
+              {availableTimers.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhum cronômetro disponível.
+                </p>
+              ) : (
+                <div className="w-fit">
+                  <p className="text-sm mb-2">Próxima nota:</p>
+                  <Card key={availableTimers[0].id} className="flex w-fit">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <CardTitle className="text-sm font-semibold text-nowrap">Nota: {availableTimers[0].orderNumber}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Button
+                        size="sm"
+                        className="mt-5"
+                        onClick={() => {
+                          setTypeTimer("separation")
+                          setLoginModalOpen(true)
+                          setOrderNumber(availableTimers[0].orderNumber)
+                        }}>
+                          Iniciar Timer
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+            <div className="mt-7">
+              <p className="font-bold text-xl text-nowrap py-3">Fila de Conferência: {availableConferenceTimers.length}</p>
+              {availableConferenceTimers.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhum cronômetro disponível.
+                </p>
+              ) : (
+                <div className="w-fit">
+                  <p className="text-sm mb-2">Próxima nota:</p>
+                  <Card key={availableConferenceTimers[0].id} className="flex w-fit">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <CardTitle className="text-sm font-semibold text-nowrap">Nota: {availableConferenceTimers[0].orderNumber}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Button
+                        size="sm"
+                        className="mt-5"
+                        onClick={() => {
+                          setTypeTimer("conference")
+                          setLoginModalOpen(true)
+                          setOrderNumber(availableConferenceTimers[0].orderNumber)
+                        }}>
+                          Iniciar Timer
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
           </CardContent>
           {isDetached && (
             <CardFooter>
@@ -260,7 +334,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
             )}
           </CardHeader>
           <CardContent>
-            {activeTimers.length === 0 ? (
+            {activeTimers.length === 0 && activeConferenceTimers.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 Nenhum cronômetro ativo.
               </p>
@@ -270,10 +344,23 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                   const person = people.find((p) => p.id === timer.personId)
                   return (
                     <Timer
+                      tag="Separação"
                       key={timer.id}
                       timer={timer}
                       personName={person?.name || "Desconhecido"}
                       onStop={() => onStopTimer(timer.id)}
+                    />
+                  )
+                })}
+                {activeConferenceTimers.map((timer) => {
+                  const person = people.find((p) => p.id === timer.personId)
+                  return (
+                    <Timer
+                      tag="Conferência"
+                      key={timer.id}
+                      timer={timer}
+                      personName={person?.name || "Desconhecido"}
+                      onStop={() => onStopConferenceTimer(timer.id)}
                     />
                   )
                 })}
@@ -296,6 +383,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
         setUsername("")
         setPassword("")
         setLoginError("")
+        setTypeTimer(null)
       }
     }}>
       <DialogContent>
@@ -316,7 +404,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <Button onClick={handleStartTimer}>
+        <Button onClick={typeTimer === "separation" ? handleStartTimer : handleStartConferenceTimer}>
           Iniciar Cronômetro
         </Button>
 

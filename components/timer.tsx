@@ -12,10 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 interface TimerProps {
   timer: TimeRecord
   personName: string
+  tag: string
   onStop: () => void
 }
 
-export function Timer({ timer, personName, onStop }: TimerProps) {
+export function Timer({ timer, personName, tag, onStop }: TimerProps) {
   const [elapsedTime, setElapsedTime] = useState(0)
   const [buttonStyle, setButtonStyle] = useState({
     backgroundColor: "rgb(22, 163, 74)", // Verde inicial
@@ -76,19 +77,16 @@ export function Timer({ timer, personName, onStop }: TimerProps) {
     return () => clearInterval(interval)
   }, [timer.startTime])
 
-  useEffect(() => {
-    console.log("timer", timer)
-  }, [])
-
   return (
     <>
     <Card className="overflow-hidden min-w-80 w-fit">
       <CardContent className="p-4 cursor-pointer" onClick={() => setDetailsModalOpen(true)}>
         <div className="space-y-2">
           <div className="flex flex-col justify-between items-center">
+            <span className="text-md text-muted-foreground">{tag}</span>
             <span className="font-bold text-5xl">{personName}</span>
             <span className="text-xl text-muted-foreground">Nota #{timer.orderNumber}</span>
-            <span className="text-xl text-muted-foreground">Volumes: {timer.volumeCount} / Itens: {timer.itemCount}</span>
+            <span className="text-xl text-muted-foreground">Itens: {timer.itemCount}  /  Volumes: {timer.volumeCount}</span>
           </div>
           <div className="text-6xl font-bold text-center py-4">{formatTime(elapsedTime)}</div>
           <div className="text-xs text-muted-foreground">
@@ -113,10 +111,10 @@ export function Timer({ timer, personName, onStop }: TimerProps) {
           </div>
           <div className="space-y-1">
             <div>
-              <Label>Volumes: {timer.volumeCount}</Label>
+              <Label>Itens: {timer.itemCount}</Label>
             </div>
             <div>
-              <Label>Itens: {timer.itemCount}</Label>
+              <Label>Volumes: {timer.volumeCount}</Label>
             </div>
             <div>
               <Label>Produtos: </Label>

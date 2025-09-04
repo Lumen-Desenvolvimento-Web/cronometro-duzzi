@@ -13,6 +13,7 @@ export type TimerData = {
   itemCount?: number | 0
   volumeCount?: number | 0
   products?: Product[]
+  destination?: string
 }
 
 export type TimeRecord = {
