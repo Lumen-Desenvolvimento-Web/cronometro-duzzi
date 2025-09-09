@@ -2,12 +2,12 @@
 import { Person, TimeRecord } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Label } from "./ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { approveTimer } from "@/lib/data-service";
-import { EditTimerModal } from "./editTimerModal";
+import { EditNoteModal } from "./editNoteModal";
 
 
 interface ConfirmationProps {
@@ -15,11 +15,20 @@ interface ConfirmationProps {
     finishedTimers: TimeRecord[]
 }
 
-export function Confirmation ({ finishedTimers, people }: ConfirmationProps) {
+export function Confirmation ({ finishedTimers: initialTimers, people }: ConfirmationProps) {
+    const [finishedTimers, setFinishedTimers] = useState<TimeRecord[]>(initialTimers)
     const [detailsModalOpen, setDetailsModalOpen] = useState(false)
     const [editModalOpen, setEditModalOpen] = useState(false)
     const [timerDetails, setTimerDetails] = useState<TimeRecord | null>()
 
+    useEffect(() => {
+        setFinishedTimers(initialTimers)
+    }, [initialTimers])
+
+    const handleUpdateTimers = (updatedTimer: TimeRecord) => {
+        setFinishedTimers((prev) => prev.map((timer) => timer.id === updatedTimer.id ? updatedTimer : timer))
+        setTimerDetails(updatedTimer)
+    }
 
     return (
         <>
@@ -105,7 +114,7 @@ export function Confirmation ({ finishedTimers, people }: ConfirmationProps) {
             </DialogContent>
         </Dialog>
 
-        <EditTimerModal open={editModalOpen} onOpenChange={setEditModalOpen} timer={timerDetails || null} />
+        <EditNoteModal open={editModalOpen} onOpenChange={setEditModalOpen} timer={timerDetails || null} separator={people.find((person) => person.id === timerDetails?.personId)?.name} onUpdate={handleUpdateTimers} />
         </>
     )
 }

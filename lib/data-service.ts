@@ -240,6 +240,34 @@ export async function fetchConfirmationTimers(): Promise<TimerData[]> {
   }))
 }
 
+export async function updateConfirmationTimer(timer: TimeRecord): Promise<TimeRecord> {
+  const { data: timerData, error: timerError } = await supabase
+    .from('notes')
+    .update({ item_count: timer.itemCount, volume_count: timer.volumeCount })
+    .eq('id', timer.id)
+    .select('*')
+    .single()
+
+  if (timerError || !timerData) throw timerError || new Error('No data')
+
+  timer.products?.map(async (product) => {
+    const { error: productError } = await supabase
+      .from('products')
+      .update({ product_amount: product.amount })
+      .eq('id', product.id)
+
+    if (productError) throw productError
+  })
+
+  return {
+    id: timerData.id,
+    orderNumber: timerData.number,
+    itemCount: timerData.item_count,
+    volumeCount: timerData.volume_count,
+    products: timer.products || []
+  }
+}
+
 export async function approveTimer(timerId: string): Promise<TimeRecord> {
   const { data, error } = await supabase
     .from('notes')
