@@ -6,14 +6,22 @@ import { PeopleManager } from '@/components/people-manager'
 import { TimerDashboard } from '@/components/timer-dashboard'
 import { Reports } from '@/components/reports'
 import type { Person, TimerData, TimeRecord } from '@/lib/types'
-import { fetchPeople, registerUser, fetchActiveTimers, fetchAvailableTimers, fetchFinishedTimers, startTimer, stopTimer, removePerson } from "@/lib/data-service"
-import { finished } from 'stream'
+import { fetchPeople, registerUser, fetchActiveTimers, fetchAvailableTimers, fetchFinishedTimers, startTimer, stopTimer, removePerson, fetchActiveConferenceTimers, fetchAvailableConferenceTimers, fetchFinishedConferenceTimers, startConferenceTimer, stopConferenceTimer } from "@/lib/data-service"
+import { Confirmation } from './confirmation'
 
 export function MainApp() {
   const [people, setPeople] = useState<Person[]>([])
+
+  //Separação
   const [activeTimers, setActiveTimers] = useState<TimerData[]>([])
   const [availableTimers, setAvailableTimers] = useState<TimerData[]>([])
   const [timeRecords, setTimeRecords] = useState<TimeRecord[]>([])
+
+  //Conferência
+  const [activeConferenceTimers, setActiveConferenceTimers] = useState<TimerData[]>([])
+  const [availableConferenceTimers, setAvailableConferenceTimers] = useState<TimerData[]>([])
+  const [conferenceTimeRecords, setConferenceTimeRecords] = useState<TimeRecord[]>([])
+
   const [isTimerWindow, setIsTimerWindow] = useState(false)
 
   // Verificar se estamos na janela de timers
@@ -26,19 +34,29 @@ export function MainApp() {
   // Carrega tudo ao montar
   useEffect(() => {
     async function loadAll() {
-      const [people, activeTimers, availableTimers, finishedTimers] = await Promise.all([
+      const [people, activeTimers, availableTimers, finishedTimers, activeConferenceTimers, availableConferenceTimers, finishedConferenceTimers] = await Promise.all([
         fetchPeople(),
+
         fetchActiveTimers(),
         fetchAvailableTimers(),
         fetchFinishedTimers(),
+
+        fetchActiveConferenceTimers(),
+        fetchAvailableConferenceTimers(),
+        fetchFinishedConferenceTimers(),
       ])
       setPeople(people)
+
       setActiveTimers(activeTimers)
       setAvailableTimers(availableTimers)
       setTimeRecords(finishedTimers)
+
+      setActiveConferenceTimers(activeConferenceTimers)
+      setAvailableConferenceTimers(availableConferenceTimers)
+      setConferenceTimeRecords(finishedConferenceTimers)
     }
     loadAll()
-  }, [people, activeTimers, availableTimers, timeRecords])
+  }, [people, activeTimers, availableTimers, timeRecords, activeConferenceTimers, availableConferenceTimers, conferenceTimeRecords])
 
   const handleRegisterUser = async (name: string, username: string, password: string) => {
     const newPerson = await registerUser(name, username, password)
@@ -61,6 +79,17 @@ export function MainApp() {
     setTimeRecords((prev) => [...prev, finished])
   }
 
+  const handleStartConference = async (personId: string, orderNumber: string) => {
+    const timer = await startConferenceTimer(personId, orderNumber)
+    setActiveConferenceTimers((prev) => [...prev, timer])
+  }
+
+  const handleStopConference = async (timerId: string) => {
+    const finished = await stopConferenceTimer(timerId)
+    setActiveConferenceTimers((prev) => prev.filter((t) => t.id !== timerId))
+    setConferenceTimeRecords((prev) => [...prev, finished])
+  }
+
   // Se estamos na janela de timers, mostrar apenas o logo e os timers
   if (isTimerWindow) {
     return (
@@ -71,7 +100,17 @@ export function MainApp() {
           </div>
         </div>
 
-        <TimerDashboard people={people} activeTimers={activeTimers} availableTimers={availableTimers} onStartTimer={startTimer} onStopTimer={stopTimer} />
+        <TimerDashboard 
+          people={people}
+          activeTimers={activeTimers}
+          availableTimers={availableTimers}
+          onStartTimer={startTimer}
+          onStopTimer={stopTimer}
+          activeConferenceTimers={activeConferenceTimers}
+          availableConferenceTimers={availableConferenceTimers}
+          onStartConferenceTimer={startConferenceTimer}
+          onStopConferenceTimer={stopConferenceTimer}
+        />
       </div>
     )
   }
@@ -87,8 +126,9 @@ export function MainApp() {
       </div>
 
       <Tabs defaultValue="timers" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="timers">Cronômetros</TabsTrigger>
+          <TabsTrigger value="confirmation">Aprovação</TabsTrigger>
           <TabsTrigger value="people">Equipe</TabsTrigger>
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
         </TabsList>
@@ -98,9 +138,17 @@ export function MainApp() {
             people={people}
             activeTimers={activeTimers}
             availableTimers={availableTimers}
-            onStartTimer={handleStart}
-            onStopTimer={handleStop}
+            onStartTimer={startTimer}
+            onStopTimer={stopTimer}
+            activeConferenceTimers={activeConferenceTimers}
+            availableConferenceTimers={availableConferenceTimers}
+            onStartConferenceTimer={startConferenceTimer}
+            onStopConferenceTimer={stopConferenceTimer}
           />
+        </TabsContent>
+
+        <TabsContent value="confirmation">
+          <Confirmation finishedTimers={timeRecords} people={people} />
         </TabsContent>
 
         <TabsContent value="people">
