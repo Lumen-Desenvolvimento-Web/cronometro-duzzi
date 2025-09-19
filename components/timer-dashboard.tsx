@@ -80,10 +80,6 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
   //   }
   // }, [])
 
-  useEffect(() => {
-    setLoginModalOpen(true)
-  }, [])
-
   // Atualizar a janela de timers destacada sempre que os timers ativos mudarem
   useEffect(() => {
     if (isElectron && window.electron && isDetached) {
