@@ -69,3 +69,96 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Erro ao processar a requisição' }, { status: 400 })
     }
 }
+
+
+export async function PUT(req: Request) {
+    try {
+        // 🔐 Verifica chave secreta no header
+        const apiKey = req.headers.get('x-api-key')
+        if (apiKey !== process.env.API_SECRET_KEY) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+        }
+
+        const body = await req.json()
+
+        let {
+            number,
+            item_count,
+            volume_count,
+            status,
+            products
+        } = body
+
+        if (!number) {
+            return NextResponse.json({ error: 'O campo "number" é obrigatório' }, { status: 400 })
+        }
+
+        if (!Array.isArray(products)) {
+            products = [products]
+        }
+
+        // existe
+        const { data: existingNote, error: checkError } = await supabase
+            .from('notes')
+            .select('id')
+            .eq('number', number)
+            .single()
+
+        if (checkError || !existingNote) {
+            return NextResponse.json({ error: 'Nota não encontrada' }, { status: 404 })
+        }
+
+        const { data: updatedNote, error: updateError } = await supabase
+            .from('notes')
+            .update({
+                item_count,
+                volume_count,
+                status
+            })
+            .eq('number', number)
+            .select()
+            .single()
+
+        if (updateError) {
+            console.error('Erro ao atualizar nota:', updateError.message)
+            return NextResponse.json({ error: updateError.message }, { status: 500 })
+        }
+
+        const { error: deleteError } = await supabase
+            .from('products')
+            .delete()
+            .eq('note_number', number)
+
+        if (deleteError) {
+            console.error('Erro ao excluir produtos:', deleteError.message)
+            return NextResponse.json({ error: deleteError.message }, { status: 500 })
+        }
+
+        const { data: newProducts, error: insertError } = await supabase
+            .from('products')
+            .insert(
+                products.map((product: Product) => ({
+                    note_number: number,
+                    product_code: product.code,
+                    product_description: product.description,
+                    product_amount: product.amount,
+                    product_location: product.location,
+                }))
+            )
+            .select()
+
+        if (insertError) {
+            console.error('Erro ao inserir produtos:', insertError.message)
+            return NextResponse.json({ error: insertError.message }, { status: 500 })
+        }
+
+        return NextResponse.json({
+            data: updatedNote,
+            products: newProducts
+        }, { status: 200 })
+
+    } catch (err) {
+        console.error('Erro geral:', err)
+        return NextResponse.json({ error: 'Erro ao processar a requisição' }, { status: 400 })
+    }
+}
