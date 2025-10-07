@@ -85,7 +85,7 @@ export async function PUT(req: Request) {
             number,
             item_count,
             volume_count,
-            status,
+            // status = "pendente",
             products
         } = body
 
@@ -113,7 +113,7 @@ export async function PUT(req: Request) {
             .update({
                 item_count,
                 volume_count,
-                status
+                // status
             })
             .eq('number', number)
             .select()
