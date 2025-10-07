@@ -58,8 +58,8 @@ export function MainApp() {
     loadAll()
   }, [people, activeTimers, availableTimers, timeRecords, activeConferenceTimers, availableConferenceTimers, conferenceTimeRecords])
 
-  const handleRegisterUser = async (name: string, username: string, password: string) => {
-    const newPerson = await registerUser(name, username, password)
+  const handleRegisterUser = async (name: string, username: string, password: string, type: number) => {
+    const newPerson = await registerUser(name, username, password, type)
     setPeople((prev) => [...prev, newPerson])
   }
 
@@ -100,7 +100,7 @@ export function MainApp() {
           </div>
         </div>
 
-        <TimerDashboard 
+        <TimerDashboard
           people={people}
           activeTimers={activeTimers}
           availableTimers={availableTimers}

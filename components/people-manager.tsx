@@ -11,16 +11,17 @@ import { Trash2 } from "lucide-react"
 import type { Person } from "@/lib/types"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import { finishBreak, isBreakActive, takeBreak, verifyCredentials } from "@/lib/data-service"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
 interface PeopleManagerProps {
   people: Person[]
-  onRegisterUser: (name: string, username: string, password: string) => Promise<void>
+  onRegisterUser: (name: string, username: string, password: string, type: number) => Promise<void>
   onRemovePerson: (id: string) => Promise<void>
 }
 
 export function PeopleManager({ people, onRegisterUser, onRemovePerson }: PeopleManagerProps) {
   const [newUserModalOpen, setNewUserModalOpen] = useState(false)
-  const [newUser, setNewUser] = useState({ name: "", username: "", password: "" })
+  const [newUser, setNewUser] = useState({ name: "", username: "", password: "", type: "" })
   const [removeUserModalOpen, setRemoveUserModalOpen] = useState(false)
   const [removeUserId, setRemoveUserId] = useState("")
 
@@ -45,7 +46,7 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
   }, [])
 
   const handleNewUser = async () => {
-    await onRegisterUser(newUser.name, newUser.username, newUser.password)
+    await onRegisterUser(newUser.name, newUser.username, newUser.password, parseInt(newUser.type))
     setNewUserModalOpen(false)
   }
 
@@ -88,103 +89,116 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
 
   return (
     <>
-    <Card>
-      <CardHeader>
-        <CardTitle>Membros da Equipe</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex gap-2 mb-6">
-          <Button onClick={() => setNewUserModalOpen(true)}>Adicionar Usuário</Button>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Membros da Equipe</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2 mb-6">
+            <Button onClick={() => setNewUserModalOpen(true)}>Adicionar Usuário</Button>
+          </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Nome de Usuário</TableHead>
-              <TableHead className="w-[100px] text-center" colSpan={2} align="center">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {people.length === 0 ? (
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={2} className="text-center text-muted-foreground">
-                  Nenhum membro da equipe adicionado ainda
-                </TableCell>
+                <TableHead>Nome</TableHead>
+                <TableHead>Nome de Usuário</TableHead>
+                <TableHead className="w-[100px] text-center" colSpan={2} align="center">Ações</TableHead>
               </TableRow>
-            ) : (
-              people.map((person) => (
-                <TableRow key={person.id}>
-                  <TableCell>{person.name}</TableCell>
-                  <TableCell>{person.username}</TableCell>
-                  <TableCell className="text-center">
-                    <Button className="w-[100px] text-wrap" disabled={breakActive ? (person.id === breakId ? false : true) : false} variant="outline" size="icon" 
-                    onClick={() => {
-                      setLoginModalOpen(true)
-                      setId(person.id)
-                    }}>
-                      {person.isBreak ? " Sair do Intervalo" : "Intervalo"}
-                    </Button>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Button variant="ghost" size="icon" onClick={() => {setRemoveUserId(person.id); setRemoveUserModalOpen(true)}}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+            </TableHeader>
+            <TableBody>
+              {people.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={2} className="text-center text-muted-foreground">
+                    Nenhum membro da equipe adicionado ainda
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              ) : (
+                people.map((person) => (
+                  <TableRow key={person.id}>
+                    <TableCell>{person.name}</TableCell>
+                    <TableCell>{person.username}</TableCell>
+                    <TableCell className="text-center">
+                      <Button className="w-[100px] text-wrap" disabled={breakActive ? (person.id === breakId ? false : true) : false} variant="outline" size="icon"
+                        onClick={() => {
+                          setLoginModalOpen(true)
+                          setId(person.id)
+                        }}>
+                        {person.isBreak ? " Sair do Intervalo" : "Intervalo"}
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button variant="ghost" size="icon" onClick={() => { setRemoveUserId(person.id); setRemoveUserModalOpen(true) }}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-    <Dialog open={newUserModalOpen} onOpenChange={setNewUserModalOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Cadastrar Usuário</DialogTitle>
-        </DialogHeader>
+      <Dialog open={newUserModalOpen} onOpenChange={setNewUserModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cadastrar Usuário</DialogTitle>
+          </DialogHeader>
 
-        {/* Campos de username e senha */}
-        <Input
-          placeholder="Nome"
-          onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-        />
-        <Input
-          placeholder="Nome de usuário"
-          onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-        />
-        <Input
-          type="password"
-          placeholder="Senha"
-          onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-        />
+          {/* Campos de username e senha */}
+          <Input
+            placeholder="Nome"
+            onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+          />
 
-        {/* {error && <p className="text-red-500">{error}</p>} */}
+          <Input
+            placeholder="Nome de usuário"
+            onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+          />
 
-        <Button onClick={() => handleNewUser()}>
-          Cadastrar
-        </Button>
-      </DialogContent>
-    </Dialog>
+          <Select value={newUser.type} onValueChange={(value) => setNewUser({ ...newUser, type: value })}>
+            <SelectTrigger className="w-full mt-1">
+              <SelectValue placeholder="Selecione um tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">Separador</SelectItem>
+              <SelectItem value="2">Conferente</SelectItem>
+              <SelectItem value="3">Aprovador</SelectItem>
+            </SelectContent>
+          </Select>
 
-    <Dialog open={removeUserModalOpen} onOpenChange={setRemoveUserModalOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Remover Usuário</DialogTitle>
-        </DialogHeader>
+          <Input
+            type="password"
+            placeholder="Senha"
+            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+          />
 
-        <p className="text-sm text-muted-foreground">
-          Tem certeza que deseja remover esse usuário?
-        </p>
+          {/* {error && <p className="text-red-500">{error}</p>} */}
 
-        <Button onClick={() => handleRemoveUser(removeUserId)}>
-          Remover
-        </Button>
-      </DialogContent>
-    </Dialog>
+          <Button onClick={() => handleNewUser()}>
+            Cadastrar
+          </Button>
+        </DialogContent>
+      </Dialog>
 
-    <Dialog open={loginModalOpen} onOpenChange={(open) => {
+      <Dialog open={removeUserModalOpen} onOpenChange={setRemoveUserModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remover Usuário</DialogTitle>
+          </DialogHeader>
+
+          <p className="text-sm text-muted-foreground">
+            Tem certeza que deseja remover esse usuário?
+          </p>
+
+          <Button onClick={() => handleRemoveUser(removeUserId)}>
+            Remover
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={loginModalOpen} onOpenChange={(open) => {
         setLoginModalOpen(open)
 
         if (!open) {
@@ -197,7 +211,7 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
           <DialogHeader>
             <DialogTitle>Login para Iniciar</DialogTitle>
           </DialogHeader>
-  
+
           {/* Campos de username e senha */}
           <Input
             placeholder="Nome de usuário"
@@ -210,11 +224,11 @@ export function PeopleManager({ people, onRegisterUser, onRemovePerson }: People
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-  
+
           <Button onClick={() => handleBreak(id)}>
             Iniciar Intervalo
           </Button>
-  
+
           {loginError && <p className="text-red-500 mt-2 text-sm">{loginError}</p>}
         </DialogContent>
       </Dialog>

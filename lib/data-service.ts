@@ -6,7 +6,7 @@ import { decryptPassword, encryptPassword } from './crypto'
 export async function fetchPeople(): Promise<Person[]> {
   const { data, error } = await supabase
     .from('users')
-    .select('id, name, username, is_break')
+    .select('id, name, username, type, is_break')
     .order('name', { ascending: true })
 
   if (error) throw error
@@ -15,11 +15,12 @@ export async function fetchPeople(): Promise<Person[]> {
     id: row.id,
     name: row.name,
     username: row.username,
+    type: row.type,
     isBreak: row.is_break
   }))
 }
 
-export async function registerUser(name: string, username: string, password: string): Promise<Person> {
+export async function registerUser(name: string, username: string, password: string, type: number): Promise<Person> {
   const password_hash = encryptPassword(password)
 
   const { data, error } = await supabase
@@ -28,8 +29,9 @@ export async function registerUser(name: string, username: string, password: str
       name,
       username,
       password_hash,
+      type,
     })
-    .select('id, name, username')
+    .select('id, name, username, type')
     .single()
 
   if (error) throw error
@@ -38,6 +40,7 @@ export async function registerUser(name: string, username: string, password: str
     id: data.id,
     name: data.name,
     username: data.username,
+    type: data.type,
     isBreak: false
   }
 }
@@ -156,7 +159,7 @@ export async function fetchFinishedTimers(): Promise<TimeRecord[]> {
 
   return data.map((row) => {
     const start = new Date(row.separation_started_at).getTime()
-    const end   = new Date(row.separation_finished_at).getTime()
+    const end = new Date(row.separation_finished_at).getTime()
     return {
       id: row.id,
       orderNumber: row.number,
@@ -210,7 +213,7 @@ export async function stopTimer(timerId: string): Promise<TimeRecord> {
   if (error || !data) throw error || new Error('No data')
 
   const start = new Date(data.separation_started_at).getTime()
-  const end   = new Date(data.separation_finished_at).getTime()
+  const end = new Date(data.separation_finished_at).getTime()
   return {
     id: data.id,
     orderNumber: data.number,
@@ -271,7 +274,7 @@ export async function updateConfirmationTimer(timer: TimeRecord): Promise<TimeRe
 export async function approveTimer(timerId: string): Promise<TimeRecord> {
   const { data, error } = await supabase
     .from('notes')
-    .update({'status': 'aprovada', 'approved': true})
+    .update({ 'status': 'aprovada', 'approved': true })
     .eq('id', timerId)
     .select('id, number')
     .single()
@@ -343,7 +346,7 @@ export async function fetchFinishedConferenceTimers(): Promise<TimeRecord[]> {
 
   return data.map((row) => {
     const start = new Date(row.conference_started_at).getTime()
-    const end   = new Date(row.conference_finished_at).getTime()
+    const end = new Date(row.conference_finished_at).getTime()
     return {
       id: row.id,
       orderNumber: row.number,
@@ -386,7 +389,7 @@ export async function stopConferenceTimer(timerId: string): Promise<TimeRecord> 
   if (error || !data) throw error || new Error('No data')
 
   const start = new Date(data.conference_started_at).getTime()
-  const end   = new Date(data.conference_finished_at).getTime()
+  const end = new Date(data.conference_finished_at).getTime()
   return {
     id: data.id,
     orderNumber: data.number,

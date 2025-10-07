@@ -2,6 +2,7 @@ export type Person = {
   id: string
   name: string
   username: string
+  type: number
   isBreak: boolean
 }
 
