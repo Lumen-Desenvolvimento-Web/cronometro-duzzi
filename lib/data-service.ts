@@ -99,15 +99,15 @@ export async function verifyCredentials(username: string, password: string) {
   return { success: true, user: data }
 }
 
-// ======== Timers ========
+// ======== Timers - Separation ========
 
-// Separation
 export async function fetchActiveTimers(): Promise<TimerData[]> {
   const { data, error } = await supabase
     .from('notes')
     .select('id, number, separator_id, separation_started_at, item_count, destination, volume_count, products(*)')
     .is('separation_finished_at', null)
     .not('separation_started_at', 'is', null)
+    .neq('status', 'cancelada')
 
   if (error) throw error
 
@@ -119,7 +119,7 @@ export async function fetchActiveTimers(): Promise<TimerData[]> {
     itemCount: row.item_count,
     volumeCount: row.volume_count,
     destination: row.destination,
-    products: row.products.map((product) => ({
+    products: row.products.map((product: any) => ({
       id: product.id,
       noteNumber: product.note_number,
       description: product.product_description,
@@ -136,6 +136,8 @@ export async function fetchAvailableTimers(): Promise<TimerData[]> {
     .select('id, number, item_count, volume_count')
     .is('separation_finished_at', null)
     .is('separation_started_at', null)
+    .neq('status', 'cancelada')
+    .order('order_priority', { ascending: true })
     .order('order_date', { ascending: true })
 
   if (error) throw error
@@ -151,9 +153,10 @@ export async function fetchAvailableTimers(): Promise<TimerData[]> {
 export async function fetchFinishedTimers(): Promise<TimeRecord[]> {
   const { data, error } = await supabase
     .from('notes')
-    .select('id, number, separator_id, separation_started_at, separation_finished_at, item_count, volume_count, products(*)') //separation_time
+    .select('id, number, separator_id, separation_started_at, separation_finished_at, item_count, volume_count, products(*)')
     .not('separation_finished_at', 'is', null)
     .eq('approved', false)
+    .neq('status', 'cancelada')
 
   if (error) throw error
 
@@ -169,7 +172,7 @@ export async function fetchFinishedTimers(): Promise<TimeRecord[]> {
       duration: Math.floor((end - start) / 1000),
       itemCount: row.item_count,
       volumeCount: row.volume_count,
-      products: row.products.map((product) => ({
+      products: row.products.map((product: any) => ({
         id: product.id,
         noteNumber: product.note_number,
         description: product.product_description,
@@ -177,7 +180,6 @@ export async function fetchFinishedTimers(): Promise<TimeRecord[]> {
         amount: product.product_amount,
         location: product.product_location
       }))
-      // duration: row.separation_time,
     }
   })
 }
@@ -224,13 +226,57 @@ export async function stopTimer(timerId: string): Promise<TimeRecord> {
   }
 }
 
-// Confirmation
+// ======== NOVAS FUNÇÕES - REORDENAR E CANCELAR ========
+
+export async function reorderSeparationNotes(reorderedTimers: TimerData[]): Promise<void> {
+  for (let i = 0; i < reorderedTimers.length; i++) {
+    const { error } = await supabase
+      .from('notes')
+      .update({ order_priority: i })
+      .eq('id', reorderedTimers[i].id)
+
+    if (error) throw error
+  }
+}
+
+export async function cancelSeparationNote(noteId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notes')
+    .update({ status: 'cancelada' })
+    .eq('id', noteId)
+
+  if (error) throw error
+}
+
+export async function reorderConferenceNotes(reorderedTimers: TimerData[]): Promise<void> {
+  for (let i = 0; i < reorderedTimers.length; i++) {
+    const { error } = await supabase
+      .from('notes')
+      .update({ order_priority: i })
+      .eq('id', reorderedTimers[i].id)
+
+    if (error) throw error
+  }
+}
+
+export async function cancelConferenceNote(noteId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notes')
+    .update({ status: 'cancelada' })
+    .eq('id', noteId)
+
+  if (error) throw error
+}
+
+// ======== Confirmation ========
+
 export async function fetchConfirmationTimers(): Promise<TimerData[]> {
   const { data, error } = await supabase
     .from('notes')
     .select('id, number, item_count, volume_count, destination, products(*)')
     .is('confirmation_finished_at', null)
     .is('confirmation_started_at', null)
+    .neq('status', 'cancelada')
     .order('order_date', { ascending: true })
 
   if (error) throw error
@@ -287,13 +333,15 @@ export async function approveTimer(timerId: string): Promise<TimeRecord> {
   }
 }
 
-// Conference
+// ======== Conference ========
+
 export async function fetchActiveConferenceTimers(): Promise<TimerData[]> {
   const { data, error } = await supabase
     .from('notes')
     .select('id, number, conference_person_id, conference_started_at, item_count, volume_count, destination, products(*)')
     .is('conference_finished_at', null)
     .not('conference_started_at', 'is', null)
+    .neq('status', 'cancelada')
 
   if (error) throw error
 
@@ -305,7 +353,7 @@ export async function fetchActiveConferenceTimers(): Promise<TimerData[]> {
     itemCount: row.item_count,
     volumeCount: row.volume_count,
     destination: row.destination,
-    products: row.products.map((product) => ({
+    products: row.products.map((product: any) => ({
       id: product.id,
       noteNumber: product.note_number,
       description: product.product_description,
@@ -324,6 +372,8 @@ export async function fetchAvailableConferenceTimers(): Promise<TimerData[]> {
     .is('conference_finished_at', null)
     .is('conference_started_at', null)
     .is('approved', true)
+    .neq('status', 'cancelada')
+    .order('order_priority', { ascending: true })
     .order('order_date', { ascending: true })
 
   if (error) throw error
@@ -341,6 +391,7 @@ export async function fetchFinishedConferenceTimers(): Promise<TimeRecord[]> {
     .from('notes')
     .select('id, number, conference_person_id, conference_started_at, conference_finished_at')
     .not('conference_finished_at', 'is', null)
+    .neq('status', 'cancelada')
 
   if (error) throw error
 

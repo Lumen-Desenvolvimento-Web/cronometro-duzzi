@@ -12,8 +12,9 @@ const nextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
-  assetPrefix: './', // Add this line to fix asset paths
-  basePath: '', // Ensure this is empty for file:// protocol
+  // Remova ou comente estas linhas:
+  // assetPrefix: './',
+  basePath: '', 
   experimental: {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,

@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Timer } from "@/components/timer"
 import type { Person, TimerData, TimeRecord } from "@/lib/types"
-import { Maximize2 } from "lucide-react"
+import { Maximize2, ExternalLink, ArrowUpDown, X } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import { Input } from "./ui/input"
-import { verifyCredentials } from "@/lib/data-service"
+import { verifyCredentials, reorderSeparationNotes, reorderConferenceNotes, cancelSeparationNote, cancelConferenceNote } from "@/lib/data-service"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
+import { ReorderModal } from "./reorder-modal"
+import { CancelNoteModal } from "./cancel-note-modal"
 
 interface TimerDashboardProps {
   people: Person[]
@@ -37,48 +39,17 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
 
-
   const [typeTimer, setTypeTimer] = useState<"separation" | "conference" | null>()
 
-  // Verificar se estamos no Electron e se é uma janela de timer
-  // Isso é executado apenas no cliente, evitando erros de hidratação
-  // useEffect(() => {
-  //   setIsElectron(typeof window !== "undefined" && "electron" in window)
+  // Modais de reordenar
+  const [reorderSeparationModalOpen, setReorderSeparationModalOpen] = useState(false)
+  const [reorderConferenceModalOpen, setReorderConferenceModalOpen] = useState(false)
 
-  //   if (typeof window !== "undefined" && "electron" in window) {
-  //     const isTimer = window.electron.isTimerWindow()
-  //     setIsTimerWindow(isTimer)
-
-  //     // Registrar listener para atualização de timers
-  //     const removeListener = window.electron.onTimerUpdate((updatedTimers: TimeRecord[]) => {
-  //       if (window.electron.isTimerWindow()) {
-  //         console.log("Timers atualizados na janela destacada", updatedTimers)
-  //         // Atualizar os timers locais na janela destacada
-  //         setLocalTimers(updatedTimers)
-  //       }
-  //     })
-
-  //     // Registrar listener para inicialização da janela de timers
-  //     const removeInitListener = window.electron.onInitTimerWindow((data) => {
-  //       if (window.electron.isTimerWindow() && data.timers) {
-  //         console.log("Inicializando janela de timers com dados", data)
-  //         // Inicializar os timers locais na janela destacada
-  //         setLocalTimers(data.timers)
-  //       }
-  //     })
-
-  //     // Registrar listener para quando a janela de timers é fechada
-  //     const removeClosedListener = window.electron.onTimerWindowClosed(() => {
-  //       setIsDetached(false)
-  //     })
-
-  //     return () => {
-  //       if (removeListener) removeListener()
-  //       if (removeInitListener) removeInitListener()
-  //       if (removeClosedListener) removeClosedListener()
-  //     }
-  //   }
-  // }, [])
+  // Modais de cancelar
+  const [cancelModalOpen, setCancelModalOpen] = useState(false)
+  const [noteToCancelId, setNoteToCancelId] = useState<string>("")
+  const [noteToCancelNumber, setNoteToCancelNumber] = useState<string>("")
+  const [cancelType, setCancelType] = useState<"separation" | "conference">("separation")
 
   // Atualizar a janela de timers destacada sempre que os timers ativos mudarem
   useEffect(() => {
@@ -88,7 +59,6 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
     }
   }, [activeTimers, isElectron, isDetached])
 
-  // Add this function inside the TimerDashboard component
   const personHasActiveTimer = (personId: string) => {
     return activeTimers.some((timer) => timer.personId === personId)
   }
@@ -163,10 +133,13 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
     }
   }
 
-  // Add this function inside the TimerDashboard component
-  const getPeopleWithoutActiveTimers = () => {
-    return people.filter((person) => !personHasActiveTimer(person.id) && !person.isBreak)
-  }
+ const getPeopleWithoutActiveTimers = () => {
+  return people.filter((person) => 
+    !personHasActiveTimer(person.id) && 
+    !person.isBreak &&
+    person.type !== 3
+  )
+}
 
   const handleDetachTimers = () => {
     if (isElectron && window.electron) {
@@ -175,16 +148,42 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
     }
   }
 
-  // console.log(availableTimers)
+  const handleOpenPainel = () => {
+    window.open('/painel', '_blank')
+  }
+
+  const handleReorderSeparation = async (reorderedTimers: TimerData[]) => {
+    await reorderSeparationNotes(reorderedTimers)
+    window.location.reload() // Recarrega para atualizar a ordem
+  }
+
+  const handleReorderConference = async (reorderedTimers: TimerData[]) => {
+    await reorderConferenceNotes(reorderedTimers)
+    window.location.reload()
+  }
+
+  const handleCancelNote = async () => {
+    if (cancelType === "separation") {
+      await cancelSeparationNote(noteToCancelId)
+    } else {
+      await cancelConferenceNote(noteToCancelId)
+    }
+    window.location.reload()
+  }
+
+  const openCancelModal = (noteId: string, orderNumber: string, type: "separation" | "conference") => {
+    setNoteToCancelId(noteId)
+    setNoteToCancelNumber(orderNumber)
+    setCancelType(type)
+    setCancelModalOpen(true)
+  }
 
   // Se estamos na janela de timers, mostrar apenas os timers e o logo
   if (isTimerWindow) {
-    // Usar localTimers em vez de activeTimers na janela destacada
     const timersToDisplay = localTimers.length > 0 ? localTimers : activeTimers
 
     return (
       <div className="p-6 space-y-6">
-        {/* Apenas os cronômetros ativos */}
         <Card>
           <CardHeader>
             <CardTitle>Cronômetros Ativos</CardTitle>
@@ -223,7 +222,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
           </div>
           <div className="flex gap-2">
             {getPeopleWithoutActiveTimers().map((person) => (
-              <Card className="items-center px-5 py-2 w-fit">
+              <Card key={person.id} className="items-center px-5 py-2 w-fit">
                 <p>{person.name}</p>
               </Card>
             ))}
@@ -247,12 +246,20 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
       <div className="flex gap-4">
         <div className="space-y-6 mb-3 w-fit">
           <Card className="min-h-96">
-            {/* <CardHeader className="flex flex-row items-center justify-between"> */}
-            {/*<CardTitle className="text-nowrap w-full">Fila de Separação: {availableTimers.length}</CardTitle> */}
-            {/*</CardHeader> */}
             <CardContent>
               <div>
-                <p className="font-bold text-xl text-nowrap py-3">Fila de Separação: {availableTimers.length}</p>
+                <div className="flex items-center justify-between py-3">
+                  <p className="font-bold text-xl text-nowrap">Fila de Separação: {availableTimers.length}</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setReorderSeparationModalOpen(true)}
+                    disabled={availableTimers.length === 0}
+                  >
+                    <ArrowUpDown className="h-4 w-4 mr-2" />
+                    Reordenar
+                  </Button>
+                </div>
                 {availableTimers.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     Nenhum cronômetro disponível.
@@ -260,14 +267,14 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                 ) : (
                   <div className="w-fit">
                     <p className="text-sm mb-2">Próxima nota:</p>
-                    <Card key={availableTimers[0].id} className="flex w-fit">
+                    <Card key={availableTimers[0].id} className="w-fit">
                       <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-semibold text-nowrap">Nota: {availableTimers[0].orderNumber}</CardTitle>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="space-y-2">
                         <Button
                           size="sm"
-                          className="mt-5"
+                          className="w-full"
                           onClick={() => {
                             setTypeTimer("separation")
                             setLoginModalOpen(true)
@@ -275,13 +282,33 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                           }}>
                           Iniciar Timer
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="w-full"
+                          onClick={() => openCancelModal(availableTimers[0].id, availableTimers[0].orderNumber, "separation")}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Cancelar Nota
+                        </Button>
                       </CardContent>
                     </Card>
                   </div>
                 )}
               </div>
               <div className="mt-7">
-                <p className="font-bold text-xl text-nowrap py-3">Fila de Conferência: {availableConferenceTimers.length}</p>
+                <div className="flex items-center justify-between py-3">
+                  <p className="font-bold text-xl text-nowrap">Fila de Conferência: {availableConferenceTimers.length}</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setReorderConferenceModalOpen(true)}
+                    disabled={availableConferenceTimers.length === 0}
+                  >
+                    <ArrowUpDown className="h-4 w-4 mr-2" />
+                    Reordenar
+                  </Button>
+                </div>
                 {availableConferenceTimers.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     Nenhum cronômetro disponível.
@@ -289,20 +316,29 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                 ) : (
                   <div className="w-fit">
                     <p className="text-sm mb-2">Próxima nota:</p>
-                    <Card key={availableConferenceTimers[0].id} className="flex w-fit">
+                    <Card key={availableConferenceTimers[0].id} className="w-fit">
                       <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-semibold text-nowrap">Nota: {availableConferenceTimers[0].orderNumber}</CardTitle>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="space-y-2">
                         <Button
                           size="sm"
-                          className="mt-5"
+                          className="w-full"
                           onClick={() => {
                             setTypeTimer("conference")
                             setLoginModalOpen(true)
                             setOrderNumber(availableConferenceTimers[0].orderNumber)
                           }}>
                           Iniciar Timer
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="w-full"
+                          onClick={() => openCancelModal(availableConferenceTimers[0].id, availableConferenceTimers[0].orderNumber, "conference")}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Cancelar Nota
                         </Button>
                       </CardContent>
                     </Card>
@@ -322,18 +358,29 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
           <Card className="min-h-96">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Cronômetros Ativos</CardTitle>
-              {isElectron && (
+              <div className="flex gap-2">
+                {isElectron && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDetachTimers}
+                    disabled={isDetached}
+                    title="Destacar cronômetros em uma nova janela"
+                  >
+                    <Maximize2 className="h-4 w-4 mr-2" />
+                    Destacar Timers
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleDetachTimers}
-                  disabled={isDetached} // Removida a condição activeTimers.length === 0
-                  title="Destacar cronômetros em uma nova janela"
+                  onClick={handleOpenPainel}
+                  title="Abrir painel em nova aba"
                 >
-                  <Maximize2 className="h-4 w-4 mr-2" />
-                  Destacar Timers
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Abrir Painel
                 </Button>
-              )}
+              </div>
             </CardHeader>
             <CardContent>
               {activeTimers.length === 0 && activeConferenceTimers.length === 0 ? (
@@ -375,10 +422,10 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
               </CardFooter>
             )}
           </Card>
-          {/* </div> */}
         </div>
       </div>
 
+      {/* Modal de Login */}
       <Dialog open={loginModalOpen} onOpenChange={(open) => {
         setLoginModalOpen(open)
         if (!open) {
@@ -393,7 +440,6 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
             <DialogTitle>Login para Iniciar</DialogTitle>
           </DialogHeader>
 
-          {/* Campos de username e senha */}
           <DropdownMenu>
             <div className="mb-4 w-full">
               <p className="mb-2">Usuário:</p>
@@ -405,7 +451,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
               </DropdownMenuTrigger>
 
               <DropdownMenuContent className="w-full" align="start">
-                {people.map((person) => (
+                {people.filter((person) => person.type !== 3).map((person) => (
                   <DropdownMenuItem
                     key={person.id}
                     onClick={() => setUsername(person.username)}
@@ -418,12 +464,6 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
             </div>
           </DropdownMenu>
 
-
-          {/* <Input
-          placeholder="Nome de usuário"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        /> */}
           <p>Senha: </p>
           <Input
             type="password"
@@ -439,6 +479,32 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
           {loginError && <p className="text-red-500 mt-2 text-sm">{loginError}</p>}
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Reordenar Separação */}
+      <ReorderModal
+        open={reorderSeparationModalOpen}
+        onOpenChange={setReorderSeparationModalOpen}
+        availableTimers={availableTimers}
+        onReorder={handleReorderSeparation}
+        type="separation"
+      />
+
+      {/* Modal de Reordenar Conferência */}
+      <ReorderModal
+        open={reorderConferenceModalOpen}
+        onOpenChange={setReorderConferenceModalOpen}
+        availableTimers={availableConferenceTimers}
+        onReorder={handleReorderConference}
+        type="conference"
+      />
+
+      {/* Modal de Cancelar Nota */}
+      <CancelNoteModal
+        open={cancelModalOpen}
+        onOpenChange={setCancelModalOpen}
+        orderNumber={noteToCancelNumber}
+        onConfirm={handleCancelNote}
+      />
     </>
   )
 }

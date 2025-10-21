@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { Person, TimeRecord } from "@/lib/types"
 import { Input } from "./ui/input"
-import { updateConfirmationTimer, verifyCredentials } from "@/lib/data-service"
+import { updateConfirmationTimer, verifyCredentials, approveTimer } from "@/lib/data-service"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
+import { Card } from "./ui/card"
+import { AlertCircle } from "lucide-react"
 
 type EditTimerModalProps = {
     open: boolean
@@ -17,19 +19,55 @@ type EditTimerModalProps = {
 
 export const EditNoteModal = ({ open, onOpenChange, timer, separator, onUpdate, people }: EditTimerModalProps) => {
     const [formData, setFormData] = useState<{ [key: string]: number }>({})
+    const [originalData, setOriginalData] = useState<{ [key: string]: number }>({})
+    const [hasChanges, setHasChanges] = useState(false)
 
     const [loginModalOpen, setLoginModalOpen] = useState(false)
+    const [confirmCloseModalOpen, setConfirmCloseModalOpen] = useState(false)
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
     const [loginError, setLoginError] = useState("")
 
     useEffect(() => {
-        if (timer) {
-            setFormData(timer.products ? timer.products.reduce((acc, product) => ({ ...acc, [product.id]: product.amount }), {}) : {})
+        if (timer && timer.products) {
+            const data = timer.products.reduce((acc, product) => ({ 
+                ...acc, 
+                [product.id]: product.amount 
+            }), {})
+            setFormData(data)
+            setOriginalData(data)
+            setHasChanges(false)
         }
     }, [timer])
 
-    // console.log(formData)
+    const handleValueChange = (productId: string, newValue: number) => {
+        setFormData((prev) => ({ ...prev, [productId]: newValue }))
+        setHasChanges(true)
+    }
+
+    const getChangedProducts = () => {
+        if (!timer?.products) return { added: [], removed: [], unchanged: [] }
+
+        const changes = timer.products.map((product) => {
+            const originalAmount = originalData[product.id] || 0
+            const newAmount = formData[product.id] || 0
+            const diff = newAmount - originalAmount
+
+            return {
+                ...product,
+                originalAmount,
+                newAmount,
+                diff,
+                changed: diff !== 0
+            }
+        })
+
+        return {
+            added: changes.filter(p => p.diff > 0),
+            removed: changes.filter(p => p.diff < 0),
+            unchanged: changes.filter(p => p.diff === 0)
+        }
+    }
 
     const handleSave = async () => {
         const authenticated = await verifyCredentials(username, password)
@@ -55,6 +93,7 @@ export const EditNoteModal = ({ open, onOpenChange, timer, separator, onUpdate, 
             }
 
             await updateConfirmationTimer(updatedTimer)
+            await approveTimer(timer.id)
 
             if (onUpdate) {
                 onUpdate(updatedTimer)
@@ -62,29 +101,133 @@ export const EditNoteModal = ({ open, onOpenChange, timer, separator, onUpdate, 
         }
 
         setLoginModalOpen(false)
+        setUsername("")
+        setPassword("")
+        setLoginError("")
+        setHasChanges(false)
+        onOpenChange(false)
+        window.location.reload()
+    }
+
+    const handleClose = () => {
+        if (hasChanges) {
+            setConfirmCloseModalOpen(true)
+        } else {
+            onOpenChange(false)
+        }
+    }
+
+    const confirmClose = () => {
+        setConfirmCloseModalOpen(false)
+        setHasChanges(false)
         onOpenChange(false)
     }
 
+    const changes = getChangedProducts()
+
     return (
         <>
-            <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent>
-                    <div className="flex flex-col gap-2">
-                        <p className="text-lg font-bold py-2">Nota: {timer?.orderNumber}</p>
-                        <p className="text-md text-muted-foreground">Separador: {separator}</p>
+            <Dialog open={open} onOpenChange={handleClose}>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Editar Nota #{timer?.orderNumber}</DialogTitle>
+                        <p className="text-sm text-muted-foreground">Separador: {separator}</p>
+                    </DialogHeader>
 
-                        {timer?.products && timer.products.map((product, index) => (
-                            <div key={index}>
-                                <p className="font-semibold">Produto: {product.description}</p>
-                                <Input defaultValue={product.amount} onChange={(e) => { setFormData((prev) => ({ ...prev, [product.id]: Number(e.target.value) })) }} />
-                            </div>
-                        ))}
+                    <div className="space-y-4">
+                        {/* Produtos */}
+                        <div>
+                            <h3 className="font-semibold mb-3">Produtos:</h3>
+                            {timer?.products && timer.products.map((product) => {
+                                const originalAmount = originalData[product.id] || 0
+                                const currentAmount = formData[product.id] || 0
+                                const diff = currentAmount - originalAmount
+                                const hasChanged = diff !== 0
 
-                        <Button onClick={() => setLoginModalOpen(true)}>Salvar</Button>
+                                return (
+                                    <div key={product.id} className={`mb-3 p-3 rounded-lg border ${
+                                        hasChanged 
+                                            ? diff > 0 
+                                                ? 'border-green-500 bg-green-50 dark:bg-green-950' 
+                                                : 'border-red-500 bg-red-50 dark:bg-red-950'
+                                            : 'border-gray-200'
+                                    }`}>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="font-semibold text-sm">{product.description}</p>
+                                            {hasChanged && (
+                                                <span className={`text-xs font-bold ${
+                                                    diff > 0 ? 'text-green-600' : 'text-red-600'
+                                                }`}>
+                                                    {diff > 0 ? `+${diff}` : diff}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Input 
+                                                type="number"
+                                                value={currentAmount}
+                                                onChange={(e) => handleValueChange(product.id, Number(e.target.value))}
+                                                className="w-24"
+                                            />
+                                            {hasChanged && (
+                                                <span className="text-xs text-muted-foreground">
+                                                    (Original: {originalAmount})
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        {/* Resumo das alterações */}
+                        {hasChanges && (
+                            <Card className="p-4 bg-blue-50 dark:bg-blue-950 border-blue-200">
+                                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                                    <AlertCircle className="h-4 w-4" />
+                                    Resumo das Alterações
+                                </h4>
+                                
+                                {changes.added.length > 0 && (
+                                    <div className="mb-2">
+                                        <p className="text-sm font-semibold text-green-600">Adicionados:</p>
+                                        <ul className="text-sm ml-4">
+                                            {changes.added.map(p => (
+                                                <li key={p.id}>
+                                                    {p.description}: +{p.diff} unidades
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {changes.removed.length > 0 && (
+                                    <div>
+                                        <p className="text-sm font-semibold text-red-600">Removidos:</p>
+                                        <ul className="text-sm ml-4">
+                                            {changes.removed.map(p => (
+                                                <li key={p.id}>
+                                                    {p.description}: {p.diff} unidades
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </Card>
+                        )}
+
+                        <Button 
+                            onClick={() => setLoginModalOpen(true)} 
+                            className="w-full"
+                            disabled={!hasChanges}
+                        >
+                            Aprovar Alterações
+                        </Button>
                     </div>
                 </DialogContent>
             </Dialog>
 
+            {/* Modal de Login para Aprovar */}
             <Dialog open={loginModalOpen} onOpenChange={(open) => {
                 setLoginModalOpen(open)
                 if (!open) {
@@ -95,22 +238,21 @@ export const EditNoteModal = ({ open, onOpenChange, timer, separator, onUpdate, 
             }}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Login para Aprovar</DialogTitle>
+                        <DialogTitle>Autenticação Necessária</DialogTitle>
                     </DialogHeader>
 
-                    {/* Campos de username e senha */}
                     <DropdownMenu>
                         <div className="mb-4 w-full">
-                            <p className="mb-2">Usuário:</p>
+                            <p className="mb-2">Usuário Aprovador:</p>
 
                             <DropdownMenuTrigger asChild>
                                 <button className="w-full px-3 py-2 border rounded-md text-left">
-                                    {username || "Selecionar usuário"}
+                                    {username || "Selecionar aprovador"}
                                 </button>
                             </DropdownMenuTrigger>
 
                             <DropdownMenuContent className="w-full" align="start">
-                                {people.map((person) => (
+                                {people.filter((person) => person.type === 3).map((person) => (
                                     <DropdownMenuItem
                                         key={person.id}
                                         onClick={() => setUsername(person.username)}
@@ -129,13 +271,41 @@ export const EditNoteModal = ({ open, onOpenChange, timer, separator, onUpdate, 
                         placeholder="Senha"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSave()}
                     />
 
                     <Button onClick={() => handleSave()}>
-                        Aprovar Nota
+                        Confirmar e Aprovar
                     </Button>
 
                     {loginError && <p className="text-red-500 mt-2 text-sm">{loginError}</p>}
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal de Confirmação ao Fechar */}
+            <Dialog open={confirmCloseModalOpen} onOpenChange={setConfirmCloseModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Descartar Alterações?</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                        <p className="text-sm">
+                            Você possui alterações não salvas. Tem certeza que deseja fechar sem aprovar?
+                        </p>
+                        <p className="text-sm text-red-500 font-semibold">
+                            Todas as alterações serão perdidas.
+                        </p>
+                    </div>
+
+                    <div className="flex gap-2 justify-end">
+                        <Button variant="outline" onClick={() => setConfirmCloseModalOpen(false)}>
+                            Cancelar
+                        </Button>
+                        <Button variant="destructive" onClick={confirmClose}>
+                            Sim, descartar
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
         </>
