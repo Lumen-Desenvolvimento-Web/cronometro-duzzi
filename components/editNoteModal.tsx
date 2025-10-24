@@ -128,94 +128,100 @@ export const EditNoteModal = ({ open, onOpenChange, timer, separator, onUpdate, 
     return (
         <>
             <Dialog open={open} onOpenChange={handleClose}>
-                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
+                <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+                    <DialogHeader className="flex-shrink-0">
                         <DialogTitle>Editar Nota #{timer?.orderNumber}</DialogTitle>
                         <p className="text-sm text-muted-foreground">Separador: {separator}</p>
                     </DialogHeader>
 
-                    <div className="space-y-4">
-                        {/* Produtos */}
-                        <div>
-                            <h3 className="font-semibold mb-3">Produtos:</h3>
-                            {timer?.products && timer.products.map((product) => {
-                                const originalAmount = originalData[product.id] || 0
-                                const currentAmount = formData[product.id] || 0
-                                const diff = currentAmount - originalAmount
-                                const hasChanged = diff !== 0
+                    {/* Container com scroll */}
+                    <div className="flex-1 overflow-y-auto pr-2">
+                        <div className="space-y-4">
+                            {/* Produtos */}
+                            <div>
+                                <h3 className="font-semibold mb-3">Produtos:</h3>
+                                {timer?.products && timer.products.map((product) => {
+                                    const originalAmount = originalData[product.id] || 0
+                                    const currentAmount = formData[product.id] || 0
+                                    const diff = currentAmount - originalAmount
+                                    const hasChanged = diff !== 0
 
-                                return (
-                                    <div key={product.id} className={`mb-3 p-3 rounded-lg border ${
-                                        hasChanged 
-                                            ? diff > 0 
-                                                ? 'border-green-500 bg-green-50 dark:bg-green-950' 
-                                                : 'border-red-500 bg-red-50 dark:bg-red-950'
-                                            : 'border-gray-200'
-                                    }`}>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <p className="font-semibold text-sm">{product.description}</p>
-                                            {hasChanged && (
-                                                <span className={`text-xs font-bold ${
-                                                    diff > 0 ? 'text-green-600' : 'text-red-600'
-                                                }`}>
-                                                    {diff > 0 ? `+${diff}` : diff}
-                                                </span>
-                                            )}
+                                    return (
+                                        <div key={product.id} className={`mb-3 p-3 rounded-lg border ${
+                                            hasChanged 
+                                                ? diff > 0 
+                                                    ? 'border-green-500 bg-green-50 dark:bg-green-950' 
+                                                    : 'border-red-500 bg-red-50 dark:bg-red-950'
+                                                : 'border-gray-200'
+                                        }`}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="font-semibold text-sm">{product.description}</p>
+                                                {hasChanged && (
+                                                    <span className={`text-xs font-bold ${
+                                                        diff > 0 ? 'text-green-600' : 'text-red-600'
+                                                    }`}>
+                                                        {diff > 0 ? `+${diff}` : diff}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Input 
+                                                    type="number"
+                                                    value={currentAmount}
+                                                    onChange={(e) => handleValueChange(product.id, Number(e.target.value))}
+                                                    className="w-24"
+                                                />
+                                                {hasChanged && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        (Original: {originalAmount})
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Input 
-                                                type="number"
-                                                value={currentAmount}
-                                                onChange={(e) => handleValueChange(product.id, Number(e.target.value))}
-                                                className="w-24"
-                                            />
-                                            {hasChanged && (
-                                                <span className="text-xs text-muted-foreground">
-                                                    (Original: {originalAmount})
-                                                </span>
-                                            )}
+                                    )
+                                })}
+                            </div>
+
+                            {/* Resumo das alterações */}
+                            {hasChanges && (
+                                <Card className="p-4 bg-blue-50 dark:bg-blue-950 border-blue-200">
+                                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                                        <AlertCircle className="h-4 w-4" />
+                                        Resumo das Alterações
+                                    </h4>
+                                    
+                                    {changes.added.length > 0 && (
+                                        <div className="mb-2">
+                                            <p className="text-sm font-semibold text-green-600">Adicionados:</p>
+                                            <ul className="text-sm ml-4">
+                                                {changes.added.map(p => (
+                                                    <li key={p.id}>
+                                                        {p.description}: +{p.diff} unidades
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
-                                    </div>
-                                )
-                            })}
+                                    )}
+
+                                    {changes.removed.length > 0 && (
+                                        <div>
+                                            <p className="text-sm font-semibold text-red-600">Removidos:</p>
+                                            <ul className="text-sm ml-4">
+                                                {changes.removed.map(p => (
+                                                    <li key={p.id}>
+                                                        {p.description}: {p.diff} unidades
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </Card>
+                            )}
                         </div>
+                    </div>
 
-                        {/* Resumo das alterações */}
-                        {hasChanges && (
-                            <Card className="p-4 bg-blue-50 dark:bg-blue-950 border-blue-200">
-                                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                                    <AlertCircle className="h-4 w-4" />
-                                    Resumo das Alterações
-                                </h4>
-                                
-                                {changes.added.length > 0 && (
-                                    <div className="mb-2">
-                                        <p className="text-sm font-semibold text-green-600">Adicionados:</p>
-                                        <ul className="text-sm ml-4">
-                                            {changes.added.map(p => (
-                                                <li key={p.id}>
-                                                    {p.description}: +{p.diff} unidades
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-
-                                {changes.removed.length > 0 && (
-                                    <div>
-                                        <p className="text-sm font-semibold text-red-600">Removidos:</p>
-                                        <ul className="text-sm ml-4">
-                                            {changes.removed.map(p => (
-                                                <li key={p.id}>
-                                                    {p.description}: {p.diff} unidades
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </Card>
-                        )}
-
+                    {/* Botão fixo no final */}
+                    <div className="flex-shrink-0 pt-4 border-t">
                         <Button 
                             onClick={() => setLoginModalOpen(true)} 
                             className="w-full"

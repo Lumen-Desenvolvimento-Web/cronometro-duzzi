@@ -223,7 +223,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
           <div className="flex gap-2">
             {getPeopleWithoutActiveTimers().map((person) => (
               <Card key={person.id} className="items-center px-5 py-2 w-fit">
-                <p>{person.name}</p>
+                <p className="text-sm">{person.name}</p>
               </Card>
             ))}
           </div>
@@ -248,7 +248,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
           <Card className="min-h-96">
             <CardContent>
               <div>
-                <div className="flex items-center justify-between py-3">
+                <div className="flex items-center justify-between py-3 gap-2">
                   <p className="font-bold text-xl text-nowrap">Fila de Separação: {availableTimers.length}</p>
                   <Button
                     size="sm"
@@ -297,7 +297,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                 )}
               </div>
               <div className="mt-7">
-                <div className="flex items-center justify-between py-3">
+                <div className="flex items-center justify-between py-3 gap-2">
                   <p className="font-bold text-xl text-nowrap">Fila de Conferência: {availableConferenceTimers.length}</p>
                   <Button
                     size="sm"
