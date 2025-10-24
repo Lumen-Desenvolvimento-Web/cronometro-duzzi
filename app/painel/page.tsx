@@ -3,25 +3,37 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PainelTimer } from "@/components/painel-timer"
-import type { TimeRecord, Person } from "@/lib/types"
-import { fetchActiveTimers, fetchActiveConferenceTimers, fetchPeople } from "@/lib/data-service"
+import type { TimeRecord, Person, TimerData } from "@/lib/types"
+import { 
+  fetchActiveTimers, 
+  fetchActiveConferenceTimers, 
+  fetchPeople,
+  fetchAvailableTimers,
+  fetchAvailableConferenceTimers 
+} from "@/lib/data-service"
 
 export default function PainelPage() {
   const [activeTimers, setActiveTimers] = useState<TimeRecord[]>([])
   const [activeConferenceTimers, setActiveConferenceTimers] = useState<TimeRecord[]>([])
+  const [availableTimers, setAvailableTimers] = useState<TimerData[]>([])
+  const [availableConferenceTimers, setAvailableConferenceTimers] = useState<TimerData[]>([])
   const [people, setPeople] = useState<Person[]>([])
 
   const fetchData = async () => {
     try {
-      const [timers, conferenceTimers, peopleData] = await Promise.all([
+      const [timers, conferenceTimers, peopleData, available, availableConference] = await Promise.all([
         fetchActiveTimers(),
         fetchActiveConferenceTimers(),
         fetchPeople(),
+        fetchAvailableTimers(),
+        fetchAvailableConferenceTimers(),
       ])
 
       setActiveTimers(timers)
       setActiveConferenceTimers(conferenceTimers)
       setPeople(peopleData)
+      setAvailableTimers(available)
+      setAvailableConferenceTimers(availableConference)
     } catch (error) {
       console.error("Erro ao buscar dados:", error)
     }
@@ -30,7 +42,7 @@ export default function PainelPage() {
   useEffect(() => {
     fetchData()
 
-    // Atualiza a cada 5 segundos
+    // Atualiza a cada 1 segundo
     const interval = setInterval(fetchData, 1000)
 
     return () => clearInterval(interval)
@@ -43,6 +55,10 @@ export default function PainelPage() {
           <img src="/duzzi.png" alt="Duzzi Logo" className="w-full h-full object-contain" />
         </div>
         <h1 className="text-3xl font-bold text-center text-black">Painel de Cronômetros</h1>
+        <div className="flex gap-6 mt-4">
+          <p className="font-bold text-xl text-nowrap text-black">Fila de Separação: {availableTimers.length}</p>
+          <p className="font-bold text-black text-xl text-nowrap">Fila de Conferência: {availableConferenceTimers.length}</p>
+        </div>
       </div>
 
       <Card>

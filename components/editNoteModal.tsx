@@ -219,7 +219,6 @@ export const EditNoteModal = ({ open, onOpenChange, timer, separator, onUpdate, 
                         <Button 
                             onClick={() => setLoginModalOpen(true)} 
                             className="w-full"
-                            disabled={!hasChanges}
                         >
                             Aprovar Alterações
                         </Button>

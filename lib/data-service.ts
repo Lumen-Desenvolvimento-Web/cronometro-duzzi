@@ -133,12 +133,12 @@ export async function fetchActiveTimers(): Promise<TimerData[]> {
 export async function fetchAvailableTimers(): Promise<TimerData[]> {
   const { data, error } = await supabase
     .from('notes')
-    .select('id, number, item_count, volume_count')
+    .select('id, number, item_count, volume_count, order_priority')
     .is('separation_finished_at', null)
     .is('separation_started_at', null)
     .neq('status', 'cancelada')
-    .order('order_priority', { ascending: true })
-    .order('order_date', { ascending: true })
+    .order('order_priority', { ascending: false, nullsFirst: false }) // MAIOR PRA MENOR, nulls pro final
+    .order('number', { ascending: true }) // desempate pelo número da nota
 
   if (error) throw error
 
@@ -229,10 +229,23 @@ export async function stopTimer(timerId: string): Promise<TimeRecord> {
 // ======== NOVAS FUNÇÕES - REORDENAR E CANCELAR ========
 
 export async function reorderSeparationNotes(reorderedTimers: TimerData[]): Promise<void> {
+  // Pega o maior order_priority atual no banco
+  const { data: maxPriorityData } = await supabase
+    .from('notes')
+    .select('order_priority')
+    .order('order_priority', { ascending: false })
+    .limit(1)
+    .single()
+
+  // Define o ponto de partida (maior número + quantidade de notas)
+  const startPriority = (maxPriorityData?.order_priority || 0) + reorderedTimers.length
+
+  // Atualiza de trás pra frente (última nota = maior número)
   for (let i = 0; i < reorderedTimers.length; i++) {
+    const priority = startPriority - i
     const { error } = await supabase
       .from('notes')
-      .update({ order_priority: i })
+      .update({ order_priority: priority })
       .eq('id', reorderedTimers[i].id)
 
     if (error) throw error
@@ -249,10 +262,23 @@ export async function cancelSeparationNote(noteId: string): Promise<void> {
 }
 
 export async function reorderConferenceNotes(reorderedTimers: TimerData[]): Promise<void> {
+  // Pega o maior order_priority atual no banco
+  const { data: maxPriorityData } = await supabase
+    .from('notes')
+    .select('order_priority')
+    .order('order_priority', { ascending: false })
+    .limit(1)
+    .single()
+
+  // Define o ponto de partida (maior número + quantidade de notas)
+  const startPriority = (maxPriorityData?.order_priority || 0) + reorderedTimers.length
+
+  // Atualiza de trás pra frente (última nota = maior número)
   for (let i = 0; i < reorderedTimers.length; i++) {
+    const priority = startPriority - i
     const { error } = await supabase
       .from('notes')
-      .update({ order_priority: i })
+      .update({ order_priority: priority })
       .eq('id', reorderedTimers[i].id)
 
     if (error) throw error
@@ -277,7 +303,7 @@ export async function fetchConfirmationTimers(): Promise<TimerData[]> {
     .is('confirmation_finished_at', null)
     .is('confirmation_started_at', null)
     .neq('status', 'cancelada')
-    .order('order_date', { ascending: true })
+    .order('number', { ascending: true })
 
   if (error) throw error
 
@@ -367,14 +393,14 @@ export async function fetchActiveConferenceTimers(): Promise<TimerData[]> {
 export async function fetchAvailableConferenceTimers(): Promise<TimerData[]> {
   const { data, error } = await supabase
     .from('notes')
-    .select('id, number, item_count, volume_count')
+    .select('id, number, item_count, volume_count, order_priority')
     .not('separation_time', 'is', null)
     .is('conference_finished_at', null)
     .is('conference_started_at', null)
     .is('approved', true)
     .neq('status', 'cancelada')
-    .order('order_priority', { ascending: true })
-    .order('order_date', { ascending: true })
+    .order('order_priority', { ascending: false, nullsFirst: false }) // MAIOR PRA MENOR, nulls pro final
+    .order('number', { ascending: true }) // desempate pelo número da nota
 
   if (error) throw error
 
