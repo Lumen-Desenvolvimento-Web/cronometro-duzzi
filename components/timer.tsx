@@ -79,12 +79,12 @@ export function Timer({ timer, personName, tag, onStop }: TimerProps) {
 
   return (
     <>
-    <Card className="overflow-hidden min-w-80 w-fit">
+    <Card className="overflow-hidden ">
       <CardContent className="p-4 cursor-pointer" onClick={() => setDetailsModalOpen(true)}>
         <div className="space-y-2">
           <div className="flex flex-col justify-between items-center">
             <span className="text-md text-muted-foreground">{tag}</span>
-            <span className="font-bold text-5xl">{personName}</span>
+            <span className="font-bold text-5xl text-clip max-w-fit">{personName}</span>
             <span className="text-xl text-muted-foreground">Nota #{timer.orderNumber}</span>
             <span className="text-xl text-muted-foreground">Itens: {timer.itemCount}  /  Volumes: {timer.volumeCount}</span>
           </div>

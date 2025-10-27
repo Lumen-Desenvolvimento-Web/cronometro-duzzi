@@ -54,7 +54,7 @@ export function Confirmation({ finishedTimers: initialTimers, people }: Confirma
             </Card>
 
             <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-                <DialogContent className="w-fit">
+                <DialogContent className="max-w-[80vh] max-h-[90vh] overflow-scroll">
                     <DialogHeader>
                         <DialogTitle>Detalhes da Nota</DialogTitle>
                     </DialogHeader>

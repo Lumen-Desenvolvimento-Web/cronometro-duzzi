@@ -6,7 +6,7 @@ import { Input } from "./ui/input"
 import { updateConfirmationTimer, verifyCredentials, approveTimer } from "@/lib/data-service"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Card } from "./ui/card"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Search } from "lucide-react"
 
 type EditTimerModalProps = {
     open: boolean
@@ -21,6 +21,7 @@ export const EditNoteModal = ({ open, onOpenChange, timer, separator, onUpdate, 
     const [formData, setFormData] = useState<{ [key: string]: number }>({})
     const [originalData, setOriginalData] = useState<{ [key: string]: number }>({})
     const [hasChanges, setHasChanges] = useState(false)
+    const [searchTerm, setSearchTerm] = useState("")
 
     const [loginModalOpen, setLoginModalOpen] = useState(false)
     const [confirmCloseModalOpen, setConfirmCloseModalOpen] = useState(false)
@@ -68,6 +69,14 @@ export const EditNoteModal = ({ open, onOpenChange, timer, separator, onUpdate, 
             unchanged: changes.filter(p => p.diff === 0)
         }
     }
+
+    const filteredProducts = timer?.products?.filter((product) => {
+        const search = searchTerm.toLowerCase()
+        return (
+            String(product.id).toLowerCase().includes(search) ||
+            product.description.toLowerCase().includes(search)
+        )
+    })
 
     const handleSave = async () => {
         const authenticated = await verifyCredentials(username, password)
@@ -120,6 +129,7 @@ export const EditNoteModal = ({ open, onOpenChange, timer, separator, onUpdate, 
     const confirmClose = () => {
         setConfirmCloseModalOpen(false)
         setHasChanges(false)
+        setSearchTerm("")
         onOpenChange(false)
     }
 
@@ -137,49 +147,82 @@ export const EditNoteModal = ({ open, onOpenChange, timer, separator, onUpdate, 
                     {/* Container com scroll */}
                     <div className="flex-1 overflow-y-auto pr-2">
                         <div className="space-y-4">
+                            {/* Campo de busca */}
+                            <div className="sticky top-0 bg-background z-10 pb-3 border-b">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        type="text"
+                                        placeholder="Buscar por código ou descrição..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="pl-10"
+                                    />
+                                </div>
+                                {searchTerm && (
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                        Mostrando {filteredProducts?.length || 0} de {timer?.products?.length || 0} produtos
+                                    </p>
+                                )}
+                            </div>
+
                             {/* Produtos */}
                             <div>
                                 <h3 className="font-semibold mb-3">Produtos:</h3>
-                                {timer?.products && timer.products.map((product) => {
-                                    const originalAmount = originalData[product.id] || 0
-                                    const currentAmount = formData[product.id] || 0
-                                    const diff = currentAmount - originalAmount
-                                    const hasChanged = diff !== 0
+                                {filteredProducts && filteredProducts.length > 0 ? (
+                                    filteredProducts.map((product) => {
+                                        const originalAmount = originalData[product.id] || 0
+                                        const currentAmount = formData[product.id] || 0
+                                        const diff = currentAmount - originalAmount
+                                        const hasChanged = diff !== 0
 
-                                    return (
-                                        <div key={product.id} className={`mb-3 p-3 rounded-lg border ${
-                                            hasChanged 
-                                                ? diff > 0 
-                                                    ? 'border-green-500 bg-green-50 dark:bg-green-950' 
-                                                    : 'border-red-500 bg-red-50 dark:bg-red-950'
-                                                : 'border-gray-200'
-                                        }`}>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <p className="font-semibold text-sm">{product.description}</p>
-                                                {hasChanged && (
-                                                    <span className={`text-xs font-bold ${
-                                                        diff > 0 ? 'text-green-600' : 'text-red-600'
-                                                    }`}>
-                                                        {diff > 0 ? `+${diff}` : diff}
-                                                    </span>
-                                                )}
+                                        return (
+                                            <div key={product.id} className={`mb-3 p-3 rounded-lg border ${
+                                                hasChanged 
+                                                    ? diff > 0 
+                                                        ? 'border-green-500 bg-green-50 dark:bg-green-950' 
+                                                        : 'border-red-500 bg-red-50 dark:bg-red-950'
+                                                    : 'border-gray-200'
+                                            }`}>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div>
+                                                        <p className="font-semibold text-sm">{product.description}</p>
+                                                        <p className="text-xs text-muted-foreground">Código: {product.id}</p>
+                                                    </div>
+                                                    {hasChanged && (
+                                                        <span className={`text-xs font-bold ${
+                                                            diff > 0 ? 'text-green-600' : 'text-red-600'
+                                                        }`}>
+                                                            {diff > 0 ? `+${diff}` : diff}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Input 
+                                                        type="number"
+                                                        value={currentAmount}
+                                                        onChange={(e) => handleValueChange(product.id, Number(e.target.value))}
+                                                        className="w-24"
+                                                    />
+                                                    {hasChanged && (
+                                                        <span className="text-xs text-muted-foreground">
+                                                            (Original: {originalAmount})
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <Input 
-                                                    type="number"
-                                                    value={currentAmount}
-                                                    onChange={(e) => handleValueChange(product.id, Number(e.target.value))}
-                                                    className="w-24"
-                                                />
-                                                {hasChanged && (
-                                                    <span className="text-xs text-muted-foreground">
-                                                        (Original: {originalAmount})
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )
-                                })}
+                                        )
+                                    })
+                                ) : (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        <p>Nenhum produto encontrado</p>
+                                        {searchTerm && (
+                                            <p className="text-sm mt-2">
+                                                Tente ajustar sua busca
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Resumo das alterações */}

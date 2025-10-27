@@ -388,7 +388,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                   Nenhum cronômetro ativo.
                 </p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {activeTimers.map((timer) => {
                     const person = people.find((p) => p.id === timer.personId)
                     return (
