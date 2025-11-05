@@ -171,6 +171,19 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
     window.location.reload()
   }
 
+  // Nova função para cancelar múltiplas notas
+  const handleCancelMultipleNotes = async (timerIds: string[]) => {
+    // Cancela cada nota selecionada
+    for (const timerId of timerIds) {
+      if (reorderSeparationModalOpen) {
+        await cancelSeparationNote(timerId)
+      } else if (reorderConferenceModalOpen) {
+        await cancelConferenceNote(timerId)
+      }
+    }
+    window.location.reload()
+  }
+
   const openCancelModal = (noteId: string, orderNumber: string, type: "separation" | "conference") => {
     setNoteToCancelId(noteId)
     setNoteToCancelNumber(orderNumber)
@@ -220,7 +233,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
           <div>
             <p className="font-bold text-xl">Separadores disponíveis:</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {getPeopleWithoutActiveTimers().map((person) => (
               <Card key={person.id} className="items-center px-5 py-2 w-fit">
                 <p className="text-sm">{person.name}</p>
@@ -486,6 +499,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
         onOpenChange={setReorderSeparationModalOpen}
         availableTimers={availableTimers}
         onReorder={handleReorderSeparation}
+        onCancelNotes={handleCancelMultipleNotes}
         type="separation"
       />
 
@@ -495,6 +509,7 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
         onOpenChange={setReorderConferenceModalOpen}
         availableTimers={availableConferenceTimers}
         onReorder={handleReorderConference}
+        onCancelNotes={handleCancelMultipleNotes}
         type="conference"
       />
 
