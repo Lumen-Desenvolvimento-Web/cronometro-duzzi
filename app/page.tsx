@@ -1,5 +1,4 @@
 import { MainApp } from "@/components/main-app"
-import Test from "@/components/test"
 
 export default function Home() {
   return (

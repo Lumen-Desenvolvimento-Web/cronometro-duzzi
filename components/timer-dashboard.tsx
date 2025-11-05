@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Timer } from "@/components/timer"
 import type { Person, TimerData, TimeRecord } from "@/lib/types"
-import { Maximize2, ExternalLink, ArrowUpDown, X } from "lucide-react"
+import { Maximize2, ExternalLink, ArrowUpDown, X, Plus } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import { Input } from "./ui/input"
 import { verifyCredentials, reorderSeparationNotes, reorderConferenceNotes, cancelSeparationNote, cancelConferenceNote } from "@/lib/data-service"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { ReorderModal } from "./reorder-modal"
 import { CancelNoteModal } from "./cancel-note-modal"
+import { AddNoteModal } from "./add-note-modal"
 
 interface TimerDashboardProps {
   people: Person[]
@@ -50,6 +51,9 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
   const [noteToCancelId, setNoteToCancelId] = useState<string>("")
   const [noteToCancelNumber, setNoteToCancelNumber] = useState<string>("")
   const [cancelType, setCancelType] = useState<"separation" | "conference">("separation")
+
+  // Modal de adicionar nota
+  const [addNoteModalOpen, setAddNoteModalOpen] = useState(false)
 
   // Atualizar a janela de timers destacada sempre que os timers ativos mudarem
   useEffect(() => {
@@ -184,6 +188,10 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
     window.location.reload()
   }
 
+  const handleAddNoteSuccess = () => {
+    window.location.reload()
+  }
+
   const openCancelModal = (noteId: string, orderNumber: string, type: "separation" | "conference") => {
     setNoteToCancelId(noteId)
     setNoteToCancelNumber(orderNumber)
@@ -279,7 +287,18 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
                   </p>
                 ) : (
                   <div className="w-fit">
-                    <p className="text-sm mb-2">Próxima nota:</p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm">Próxima nota:</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setAddNoteModalOpen(true)}
+                        className="h-7"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Adicionar
+                      </Button>
+                    </div>
                     <Card key={availableTimers[0].id} className="w-fit">
                       <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-semibold text-nowrap">Nota: {availableTimers[0].orderNumber}</CardTitle>
@@ -519,6 +538,16 @@ export function TimerDashboard({ people, activeTimers, availableTimers, onStartT
         onOpenChange={setCancelModalOpen}
         orderNumber={noteToCancelNumber}
         onConfirm={handleCancelNote}
+      />
+
+      {/* Modal de Adicionar Nota */}
+      <AddNoteModal
+        open={addNoteModalOpen}
+        onOpenChange={setAddNoteModalOpen}
+        people={people}
+        availableTimers={availableTimers}
+        activeTimers={activeTimers}
+        onSuccess={handleAddNoteSuccess}
       />
     </>
   )

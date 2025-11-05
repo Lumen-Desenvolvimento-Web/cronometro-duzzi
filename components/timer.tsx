@@ -84,7 +84,7 @@ export function Timer({ timer, personName, tag, onStop }: TimerProps) {
         <div className="space-y-2">
           <div className="flex flex-col justify-between items-center">
             <span className="text-md text-muted-foreground">{tag}</span>
-            <span className="font-bold text-5xl text-clip max-w-fit">{personName}</span>
+            <span className="font-bold text-5xl text-clip max-w-fit text-center">{personName}</span>
             <span className="text-xl text-muted-foreground">Nota #{timer.orderNumber}</span>
             <span className="text-xl text-muted-foreground">Itens: {timer.itemCount}  /  Volumes: {timer.volumeCount}</span>
           </div>
@@ -102,7 +102,7 @@ export function Timer({ timer, personName, tag, onStop }: TimerProps) {
     </Card>
 
     <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-      <DialogContent className="w-fit">
+      <DialogContent className="max-w-4xl h-[70svh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Detalhes da Nota</DialogTitle>
         </DialogHeader>
