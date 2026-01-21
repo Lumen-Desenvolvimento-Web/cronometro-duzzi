@@ -1,33 +1,41 @@
-// app/api/notas/[numero]/route.ts
+// app/api/notes/[numero]/route.ts
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
 const supabase = createClient(
-  'http://localhost:8000', // API local
-  process.env.SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||  'http://72.60.14.191:22222',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { numero: string } }
+  { params }: { params: Promise<{ numero: string }> }
 ) {
   try {
-    const { numero } = params
+    const { numero } = await params
 
-    const { data: nota } = await supabase
+    console.log('Buscando nota numero:', numero)
+
+    const { data: nota, error: notaError } = await supabase
       .from('notes')
       .select('*')
       .eq('number', numero)
       .single()
 
+    console.log('Resultado nota:', nota)
+    console.log('Erro nota:', notaError)
+
     if (!nota) {
       return NextResponse.json({ success: true, data: null })
     }
 
-    const { data: produtos } = await supabase
+    const { data: produtos, error: produtosError } = await supabase
       .from('products')
       .select('*')
       .eq('note_number', numero)
+
+    console.log('Resultado produtos:', produtos)
+    console.log('Erro produtos:', produtosError)
 
     return NextResponse.json({
       success: true,
